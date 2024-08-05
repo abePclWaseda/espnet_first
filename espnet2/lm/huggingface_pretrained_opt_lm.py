@@ -47,8 +47,13 @@ class HuggingfaceOPTModel(AbsLM):
                 config.word_embed_proj_dim, config.vocab_size, bias=False
             )
         else:
+            # self.decoder = OPTModel(config)
+            # self.lm_head = pre_trained_lm_head
             self.decoder = OPTModel(config)
-            self.lm_head = pre_trained_lm_head
+            self.lm_head = nn.Linear(
+                pre_trained_lm_head.size(1), pre_trained_lm_head.size(0), bias=False
+            )
+            self.lm_head.weight = nn.Parameter(pre_trained_lm_head)
 
     def _target_mask(self, ys_in_pad):
         ys_mask = ys_in_pad != 0
