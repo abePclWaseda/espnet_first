@@ -25,5 +25,7 @@ inference_config=conf/decode_asr.yaml
     --train_set "${train_set}" \
     --valid_set "${valid_set}" \
     --test_sets "${test_sets}" \
-    --lm_train_text "data/${train_set}/text data/local/other_text/text" \
+    --lm_train_text "data/${train_set}/text" \
+    --hugging_face_model_name_or_path "facebook/opt-125m" \
+    --token_type "hugging_face" \
     --bpe_train_text "data/${train_set}/text" "$@"
