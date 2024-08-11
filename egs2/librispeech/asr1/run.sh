@@ -10,7 +10,8 @@ valid_set="dev"
 test_sets="test_clean test_other dev_clean dev_other"
 
 asr_config=conf/train_asr_conformer.yaml
-lm_config=conf/tuning/train_lm_transformer2.yaml
+# lm_config=conf/tuning/train_lm_transformer2.yaml
+lm_config=../lm1/conf/train_transformer_opt_notLSM.yaml
 inference_config=conf/decode_asr.yaml
 
 ./asr.sh \
@@ -25,5 +26,7 @@ inference_config=conf/decode_asr.yaml
     --train_set "${train_set}" \
     --valid_set "${valid_set}" \
     --test_sets "${test_sets}" \
-    --lm_train_text "data/${train_set}/text data/local/other_text/text" \
+    --lm_train_text "data/${train_set}/text" \
+    --hugging_face_model_name_or_path "facebook/opt-125m" \
+    --token_type "hugging_face" \
     --bpe_train_text "data/${train_set}/text" "$@"
