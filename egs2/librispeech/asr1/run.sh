@@ -10,7 +10,8 @@ valid_set="dev"
 test_sets="test_clean test_other dev_clean dev_other"
 
 asr_config=conf/train_asr_conformer.yaml
-lm_config=conf/tuning/train_lm_transformer2.yaml
+# lm_config=conf/tuning/train_lm_transformer2.yaml
+lm_config=../lm1/conf/train_transformer_opt_notLSM.yaml
 inference_config=conf/decode_asr.yaml
 
 ./asr.sh \
