@@ -11,6 +11,7 @@ test_sets="test_clean test_other dev_clean dev_other"
 
 asr_config=conf/train_asr.yaml
 inference_config=conf/decode_asr.yaml
+lm_config=../lm1/conf/train_transformer_opt_notLSM.yaml
 
 ./asr.sh \
     --lang en \
@@ -23,11 +24,13 @@ inference_config=conf/decode_asr.yaml
     --speed_perturb_factors "0.9 1.0 1.1" \
     --audio_format "flac.ark" \
     --feats_type raw \
-    --use_lm false \
+    --lm_config "${lm_config}" \
     --asr_config "${asr_config}" \
     --inference_config "${inference_config}" \
     --train_set "${train_set}" \
     --valid_set "${valid_set}" \
     --test_sets "${test_sets}" \
     --lm_train_text "data/${train_set}/text" \
+    --hugging_face_model_name_or_path "facebook/opt-125m" \
+    --token_type "hugging_face" \
     --bpe_train_text "data/${train_set}/text" "$@"
