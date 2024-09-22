@@ -15,7 +15,7 @@ inference_config=conf/decode_asr.yaml
 ./asr.sh \
     --lang en \
     --ngpu 1 \
-    --nj 16 \
+    --nj 8 \
     --gpu_inference true \
     --inference_nj 2 \
     --nbpe 5000 \
