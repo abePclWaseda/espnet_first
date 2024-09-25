@@ -1435,7 +1435,7 @@ if [ ${stage} -le 11 ] && [ ${stop_stage} -ge 11 ] && ! [[ " ${skip_stages} " =~
             --g2p "${g2p}" \
             --valid_data_path_and_name_and_type "${_asr_valid_dir}/${_scp},speech,${_type}" \
             --valid_shape_file "${asr_stats_dir}/valid/speech_shape" \
-            --resume true \
+            --resume false \
             ${pretrained_model:+--init_param $pretrained_model} \
             --ignore_init_mismatch ${ignore_init_mismatch} \
             --fold_length "${_fold_length}" \
