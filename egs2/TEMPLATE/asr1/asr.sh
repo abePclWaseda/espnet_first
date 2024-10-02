@@ -1150,7 +1150,7 @@ if [ ${stage} -le 7 ] && [ ${stop_stage} -ge 7 ] && ! [[ " ${skip_stages} " =~ [
             --valid_data_path_and_name_and_type "${lm_dev_text},text,text" \
             --valid_shape_file "${lm_stats_dir}/valid/text_shape.${lm_token_type}" \
             --fold_length "${lm_fold_length}" \
-            --resume false \
+            --resume true \
             --output_dir "${lm_exp}" \
             ${_opts} ${lm_args}
 
