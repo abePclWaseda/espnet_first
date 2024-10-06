@@ -111,6 +111,8 @@ class HuggingfaceOPTModel(AbsLM):
 
         h = output.last_hidden_state[:, -1]
         h = self.lm_head(h)
+        h = h[:, :50265]
+
         cache = output.past_key_values
         logp = h.log_softmax(dim=-1).squeeze(0)
         return logp, cache
@@ -149,6 +151,7 @@ class HuggingfaceOPTModel(AbsLM):
         )
         h = output.last_hidden_state
         h = self.lm_head(h[:, -1])
+        h = h[:, :50265]
 
         logp = h.log_softmax(dim=-1)
 
