@@ -58,6 +58,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         if self.causal_lm:
             model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
             self.decoder = get_hugging_face_model_network(model)
+            self.decoder.config.add_cross_attention = True
 
             if hasattr(self.decoder, "word_embeddings"):
                 self.decoder_word_embeddings = self.decoder.word_embeddings
@@ -65,6 +66,8 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
                 self.decoder_word_embeddings = self.decoder.embed_in
             elif hasattr(self.decoder, "embed_tokens"):
                 self.decoder_word_embeddings = self.decoder.embed_tokens
+            elif hasattr(self.decoder, "wte"):
+                self.decoder_word_embeddings = self.decoder.wte
             else:
                 raise Exception("Can not find the word embeddings attribute")
 
@@ -230,6 +233,11 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
             args["attention_mask"] = hs_mask.flip([1])
         else:
             args["attention_mask"] = hs_mask
+
+        # ここで encoder_hidden_states と encoder_attention_mask を追加
+        args["encoder_hidden_states"] = enc_out
+        hs_mask = (~make_pad_mask(hlens)).to(enc_out.device).float()
+        args["encoder_attention_mask"] = hs_mask
 
         args["return_dict"] = True
 
