@@ -17,15 +17,17 @@ encoder_conf:
     use_cnn_module: true
     cnn_module_kernel: 31
 
-decoder: transformer
+decoder: hugging_face_transformers
 decoder_conf:
-    attention_heads: 4
-    linear_units: 2048
-    num_blocks: 6
-    dropout_rate: 0.1
-    positional_dropout_rate: 0.1
-    self_attention_dropout_rate: 0.1
-    src_attention_dropout_rate: 0.1
+    causal_lm: True
+    model_name_or_path: "openai-community/gpt2"
+    # attention_heads: 4
+    # linear_units: 2048
+    # num_blocks: 6
+    # dropout_rate: 0.1
+    # positional_dropout_rate: 0.1
+    # self_attention_dropout_rate: 0.1
+    # src_attention_dropout_rate: 0.1
 
 model_conf:
     ctc_weight: 0.3
