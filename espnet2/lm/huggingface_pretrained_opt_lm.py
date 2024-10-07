@@ -16,6 +16,7 @@ class HuggingfaceOPTModel(AbsLM):
         self,
         vocab_size: int,
         opt_name: str,
+        remove_head: bool = True,
     ):
         super().__init__()
         try:
@@ -30,20 +31,27 @@ class HuggingfaceOPTModel(AbsLM):
 
         pretrained_opt_model = OPTModel.from_pretrained(opt_name)
         pretrained_opt_model_dict = pretrained_opt_model.state_dict()
-        pretrained_opt_model_dict.pop("decoder.embed_tokens.weight")
+        pre_trained_lm_head = pretrained_opt_model_dict.pop("decoder.embed_tokens.weight")
         self.pretrained_params = copy.deepcopy(pretrained_opt_model_dict)
 
         config = pretrained_opt_model.config
-        config.vocab_size = vocab_size
-        config.bos_token_id = vocab_size - 1
-        config.eos_token_id = vocab_size - 1
-        config.pad_token_id = 0
+        if remove_head:
+            config.vocab_size = vocab_size
+            config.bos_token_id = vocab_size - 1
+            config.eos_token_id = vocab_size - 1
+            config.pad_token_id = 0
 
-        self.decoder = OPTModel(config)
+            self.decoder = OPTModel(config)
 
-        self.lm_head = nn.Linear(
-            config.word_embed_proj_dim, config.vocab_size, bias=False
-        )
+            self.lm_head = nn.Linear(
+                config.word_embed_proj_dim, config.vocab_size, bias=False
+            )
+        else:
+            self.decoder = OPTModel(config)
+            self.lm_head = nn.Linear(
+                pre_trained_lm_head.size(1), pre_trained_lm_head.size(0), bias=False
+            )
+            self.lm_head.weight = nn.Parameter(pre_trained_lm_head)
 
     def _target_mask(self, ys_in_pad):
         ys_mask = ys_in_pad != 0
@@ -103,6 +111,8 @@ class HuggingfaceOPTModel(AbsLM):
 
         h = output.last_hidden_state[:, -1]
         h = self.lm_head(h)
+        h = h[:, :50265]
+
         cache = output.past_key_values
         logp = h.log_softmax(dim=-1).squeeze(0)
         return logp, cache
@@ -141,6 +151,7 @@ class HuggingfaceOPTModel(AbsLM):
         )
         h = output.last_hidden_state
         h = self.lm_head(h[:, -1])
+        h = h[:, :50265]
 
         logp = h.log_softmax(dim=-1)
 
