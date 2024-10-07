@@ -9,13 +9,13 @@ train_set="train_clean_100"
 valid_set="dev"
 test_sets="test_clean test_other dev_clean dev_other"
 
-asr_config=conf/train_asr.yaml
+asr_config=conf/tuning/train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic.yaml
 inference_config=conf/decode_asr.yaml
 
 ./asr.sh \
     --lang en \
     --ngpu 1 \
-    --nj 16 \
+    --nj 8 \
     --gpu_inference true \
     --inference_nj 2 \
     --nbpe 5000 \
@@ -30,4 +30,6 @@ inference_config=conf/decode_asr.yaml
     --valid_set "${valid_set}" \
     --test_sets "${test_sets}" \
     --lm_train_text "data/${train_set}/text" \
+    --hugging_face_model_name_or_path "openai-community/gpt2" \
+    --token_type "hugging_face" \
     --bpe_train_text "data/${train_set}/text" "$@"
