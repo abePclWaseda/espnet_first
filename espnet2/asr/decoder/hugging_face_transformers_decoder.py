@@ -16,7 +16,7 @@ from espnet2.asr.decoder.abs_decoder import AbsDecoder
 from espnet.nets.pytorch_backend.nets_utils import make_pad_mask
 
 try:
-    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer
+    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, AutoConfig
     from transformers.file_utils import ModelOutput
 
     is_transformers_available = True
@@ -56,8 +56,16 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         self.causal_lm = causal_lm
 
         if self.causal_lm:
-            model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
+            config = AutoConfig.from_pretrained(model_name_or_path)
+            config.add_cross_attention = True
+
+            # 設定を使用してモデルをロード
+            model = AutoModelForCausalLM.from_pretrained(model_name_or_path, config=config)
+            self.hf_generate = model
             self.decoder = get_hugging_face_model_network(model)
+
+            # 以下の行は不要になります
+            # self.decoder.config.add_cross_attention = True
 
             if hasattr(self.decoder, "word_embeddings"):
                 self.decoder_word_embeddings = self.decoder.word_embeddings
@@ -65,6 +73,8 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
                 self.decoder_word_embeddings = self.decoder.embed_in
             elif hasattr(self.decoder, "embed_tokens"):
                 self.decoder_word_embeddings = self.decoder.embed_tokens
+            elif hasattr(self.decoder, "wte"):
+                self.decoder_word_embeddings = self.decoder.wte
             else:
                 raise Exception("Can not find the word embeddings attribute")
 
@@ -88,6 +98,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
             ).detach()
         else:
             model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path)
+            self.hf_generate = model
 
             if hasattr(model, "model"):
                 self.decoder = model.model.decoder
@@ -230,6 +241,11 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
             args["attention_mask"] = hs_mask.flip([1])
         else:
             args["attention_mask"] = hs_mask
+
+        # ここで encoder_hidden_states と encoder_attention_mask を追加
+        args["encoder_hidden_states"] = enc_out
+        hs_mask = (~make_pad_mask(hlens)).to(enc_out.device).float()
+        args["encoder_attention_mask"] = hs_mask
 
         args["return_dict"] = True
 
