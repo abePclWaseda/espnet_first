@@ -61,7 +61,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
 
             # 設定を使用してモデルをロード
             model = AutoModelForCausalLM.from_pretrained(model_name_or_path, config=config)
-            object.__setattr__(self, 'hf_generate', model)
+            self.hf_generate = model
             self.decoder = get_hugging_face_model_network(model)
 
             # 以下の行は不要になります
@@ -98,7 +98,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
             ).detach()
         else:
             model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path)
-            object.__setattr__(self, 'hf_generate', model)
+            self.hf_generate = model
 
             if hasattr(model, "model"):
                 self.decoder = model.model.decoder
