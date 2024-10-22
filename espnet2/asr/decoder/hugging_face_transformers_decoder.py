@@ -61,7 +61,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
 
             # 設定を使用してモデルをロード
             model = AutoModelForCausalLM.from_pretrained(model_name_or_path, config=config)
-            self.hf_generate = model
+            object.__setattr__(self, 'hf_generate', model)
             self.decoder = get_hugging_face_model_network(model)
 
             if hasattr(self.decoder, "word_embeddings"):
