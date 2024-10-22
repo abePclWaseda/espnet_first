@@ -64,9 +64,6 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
             self.hf_generate = model
             self.decoder = get_hugging_face_model_network(model)
 
-            # 以下の行は不要になります
-            # self.decoder.config.add_cross_attention = True
-
             if hasattr(self.decoder, "word_embeddings"):
                 self.decoder_word_embeddings = self.decoder.word_embeddings
             elif hasattr(self.decoder, "embed_in"):
