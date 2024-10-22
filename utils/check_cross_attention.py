@@ -8,5 +8,6 @@ state_dict = torch.load(model_file, map_location="cpu")
 
 # クロスアテンション層のキーが存在するか確認
 cross_attention_keys = [k for k in state_dict.keys() if "crossattention" in k]
-print(f"クロスアテンション層のパラメータ数: {len(cross_attention_keys)}")
-print(f"クロスアテンション層のキー: {cross_attention_keys}")
+# print(f"クロスアテンション層のパラメータ数: {len(cross_attention_keys)}")
+# print(f"クロスアテンション層のキー: {cross_attention_keys}")
+print(state_dict.keys())
