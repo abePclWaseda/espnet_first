@@ -95,7 +95,6 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
             ).detach()
         else:
             model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path)
-            self.hf_generate = model
 
             if hasattr(model, "model"):
                 self.decoder = model.model.decoder
