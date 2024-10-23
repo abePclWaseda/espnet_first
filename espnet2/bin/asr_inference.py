@@ -247,8 +247,25 @@ class Speech2Text:
                 transformer = get_hugging_face_model_network(hugging_face_model)
                 transformer.load_state_dict(decoder.decoder.state_dict())
 
+                # # decoder.decoder.state_dict() から transformer に存在するキーのみを抽出
+                # import pdb;pdb.set_trace()
+                # decoder_state_dict = decoder.decoder.state_dict()
+                # transformer_state_dict = transformer.state_dict()
+                # compatible_decoder_state_dict = {
+                #     k: v for k, v in decoder_state_dict.items() if k in transformer_state_dict
+                # }
+                # transformer.load_state_dict(compatible_decoder_state_dict, strict=False)
+
                 lm_head = get_hugging_face_model_lm_head(hugging_face_model)
                 lm_head.load_state_dict(decoder.lm_head.state_dict())
+
+                # # decoder.lm_head.state_dict() から lm_head に存在するキーのみを抽出
+                # decoder_lm_head_state_dict = decoder.lm_head.state_dict()
+                # lm_head_state_dict = lm_head.state_dict()
+                # compatible_lm_head_state_dict = {
+                #     k: v for k, v in decoder_lm_head_state_dict.items() if k in lm_head_state_dict
+                # }
+                # lm_head.load_state_dict(compatible_lm_head_state_dict, strict=False)
             else:
                 hugging_face_model = AutoModelForSeq2SeqLM.from_pretrained(
                     decoder.model_name_or_path
