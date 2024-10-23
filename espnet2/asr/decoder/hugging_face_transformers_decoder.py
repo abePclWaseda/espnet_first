@@ -254,6 +254,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
             ),
         }
         # TODO(brian): caching
+        import pdb;pdb.set_trace()
         model_inputs = self.hf_generate.prepare_inputs_for_generation(
             ys.unsqueeze(0), **model_kwargs
         )
@@ -276,7 +277,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         xs: torch.Tensor,
         speech: torch.Tensor = None,
     ) -> Tuple[torch.Tensor, List[Any]]:
-        # import pdb;pdb.set_trace()
+        import pdb;pdb.set_trace() # 現在はGPUを使っているので, ここで止まる.
         model_kwargs = {
             "encoder_outputs": ModelOutput(last_hidden_state=self.linear_in(xs)),
         }
