@@ -255,6 +255,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         }
         # TODO(brian): caching
         import pdb;pdb.set_trace()
+        # ここから
         model_inputs = self.hf_generate.prepare_inputs_for_generation(
             ys.unsqueeze(0), **model_kwargs
         )
@@ -265,6 +266,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
             output_hidden_states=False
         )
         next_token_logits = outputs.logits[:, -1, :]
+        # ここまでの内容を修正(hf_generateを使わず、/asr/decoder/transformer_decoder.pyと似たような挙動にする。(次の文字を出力するようなコード))
         next_token_scores = torch.nn.functional.log_softmax(
             next_token_logits, dim=-1
         )  # (batch_size * num_beams, vocab_size)
