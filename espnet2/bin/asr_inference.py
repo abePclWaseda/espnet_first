@@ -467,6 +467,7 @@ class Speech2Text:
         self.hugging_face_model = hugging_face_model
         self.hugging_face_linear_in = hugging_face_linear_in
         self.hugging_face_decoder_conf = hugging_face_decoder_conf
+        # import pdb;pdb.set_trace();
         self.maxlenratio = maxlenratio
         self.minlenratio = minlenratio
         self.device = device
