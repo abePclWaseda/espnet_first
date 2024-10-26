@@ -186,16 +186,21 @@ class BaseTransformerDecoder(AbsDecoder, BatchScorerInterface):
             y, cache: NN output value and cache per `self.decoders`.
             y.shape` is (batch, maxlen_out, token)
         """
+        # ターゲット系列tgtを埋め込み層に通し, 各トークンを連続的なベクトルに変換. さらに位置エンコーディングを加えて系列情報を組み込む.
         x = self.embed(tgt)
         if cache is None:
+            # キャッシュが提供されていない場合, デコーダ層の数だけNoneを持つリストを作成. (各層のキャッシュを初期化するため.)
             cache = [None] * len(self.decoders)
-        new_cache = []
-        for c, decoder in zip(cache, self.decoders):
+        new_cache = [] # 各デコーダ層の計算結果を保存するためのリストを初期化
+        for c, decoder in zip(cache, self.decoders): # zip関数を使用して, 各層とそのキャッシュを同時に取得.
+            # デコーダ層の計算
             x, tgt_mask, memory, memory_mask = decoder(
                 x, tgt_mask, memory, memory_mask, cache=c
             )
             new_cache.append(x)
 
+        # self.normalize_beforeがTrueの場合、正規化層self.after_normを適用.
+        # デコーダの最終層の出力xから, 各バッチの最新のタイムステップ（系列の最後のトークン）の出力を取得. [:,-1] で, [全ての行:最終列]のベクトルを取得.
         if self.normalize_before:
             y = self.after_norm(x[:, -1])
         else:
@@ -203,10 +208,13 @@ class BaseTransformerDecoder(AbsDecoder, BatchScorerInterface):
         if return_hs:
             hidden = y
         if self.output_layer is not None:
+            # 出力層（線形変換）を適用し, 語彙サイズの次元に変換. (log_softmaxを適用して, 各トークンの対数確率を計算.)
             y = torch.log_softmax(self.output_layer(y), dim=-1)
 
         if return_hs:
             return (y, hidden), new_cache
+        # y: 次のトークンの対数確率分布, 形状は(batch_size, vocab_size)
+        # new_cache: 更新されたキャッシュのリスト. 各デコーダ層の出力が格納されており, 次回のデコードステップで再利用される。
         return y, new_cache
 
     def score(self, ys, state, x, return_hs=False):
@@ -254,32 +262,38 @@ class BaseTransformerDecoder(AbsDecoder, BatchScorerInterface):
 
         """
         # merge states
+        # バッチサイズと層数の取得
         n_batch = len(ys)
         n_layers = len(self.decoders)
         if states[0] is None:
             batch_state = None
         else:
             # transpose state of [batch, layer] into [layer, batch]
+            # 状態の形状を [layer, batch, ...] に変換
             batch_state = [
                 torch.stack([states[b][i] for b in range(n_batch)])
                 for i in range(n_layers)
             ]
 
         # batch decoding
+        # 将来のトークン情報をマスク
         ys_mask = subsequent_mask(ys.size(-1), device=xs.device).unsqueeze(0)
         if return_hs:
             (logp, hs), states = self.forward_one_step(
                 ys, ys_mask, xs, cache=batch_state, return_hs=return_hs
             )
         else:
+            # forward_one_step関数を使用して、一度に全バッチの次のステップを計算
             logp, states = self.forward_one_step(
                 ys, ys_mask, xs, cache=batch_state, return_hs=return_hs
             )
 
         # transpose state of [layer, batch] into [batch, layer]
+        # forward_one_stepから返されたstatesは形状が[layer, batch, ...]となっている. これを再度 [batch, layer, ...] の形に変換し、各バッチサンプルごとの状態リストを作成.
         state_list = [[states[i][b] for i in range(n_layers)] for b in range(n_batch)]
         if return_hs:
             return (logp, hs), state_list
+        # 次のトークンの対数確率logpと更新された状態state_listを返す
         return logp, state_list
 
 
