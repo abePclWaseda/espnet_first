@@ -541,7 +541,8 @@ class Speech2Text:
             assert len(enc) == 1, len(enc)
 
             # c. Passed the encoder result and the beam search
-            results = self._decode_single_sample(enc[0])
+            # import pdb;pdb.set_trace()
+            results = self._decode_single_sample(enc[0]) # ここでbeam searchが行われる.
 
             # Encoder intermediate CTC predictions
             if intermediate_outs is not None:
@@ -634,6 +635,8 @@ class Speech2Text:
                     for module in self.beam_search.nn_dict.decoder.modules():
                         if hasattr(module, "setup_step"):
                             module.setup_step()
+            # import pdb;pdb.set_trace()
+            # ここでbeam_searchメソッドを使用
             nbest_hyps = self.beam_search(
                 x=enc, maxlenratio=self.maxlenratio, minlenratio=self.minlenratio
             )
