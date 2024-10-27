@@ -247,6 +247,57 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
 
         return args, no_loss_lengths
 
+    def forward_one_step(
+        self,
+        tgt: torch.Tensor,
+        tgt_mask: torch.Tensor,
+        memory: torch.Tensor,
+        memory_mask: torch.Tensor = None,
+        *,
+        cache: List[torch.Tensor] = None,
+        return_hs: bool = False,
+    ) -> Tuple[torch.Tensor, List[torch.Tensor]]:
+        # import pdb;pdb.set_trace()
+        memory = self.linear_in(memory)
+        # トークンをエンベディング. ここの model_inputs作る処理がよくわからない.
+        if self.causal_lm:
+            # causal_lm モデルの場合 (今回はこちら？)
+            inputs_embeds = self.decoder_word_embeddings(tgt)  # (batch, 1, hidden_size)
+            model_inputs = {
+                "inputs_embeds": inputs_embeds,
+                "encoder_hidden_states": memory,
+                "encoder_attention_mask": memory_mask,
+                "past_key_values": cache,
+                "return_dict": True,
+            }
+        else:
+            # encoder-decoder モデルの場合
+            model_inputs = {
+                "input_ids": tgt,
+                "encoder_hidden_states": memory,
+                "encoder_attention_mask": memory_mask,
+                "past_key_values": cache,
+                "return_dict": True,
+            }
+
+        # デコーダを前向き計算
+        outputs = self.decoder(**model_inputs)
+
+        # 新しいキャッシュを取得
+        new_cache = outputs.past_key_values
+
+        # 最後のトークンの隠れ状態を取得
+        last_hidden_state = outputs.last_hidden_state  # (batch, 1, hidden_size)
+
+        # LM Head を通してロジットを取得
+        logits = self.lm_head(last_hidden_state)  # (batch, 1, vocab_size)
+
+         # ログソフトマックスを適用してスコアを取得
+        next_token_logits = logits[:, -1, :]  # (batch_size, vocab_size)
+        log_probs = F.log_softmax(next_token_logits, dim=-1)
+        # import pdb;pdb.set_trace()
+        return log_probs, new_cache
+
     def score(self, ys, state, x, speech=None):
         model_kwargs = {
             "encoder_outputs": ModelOutput(
@@ -274,30 +325,85 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
 
     def batch_score(
         self,
-        ys: torch.Tensor,
-        states: List[Any],
-        xs: torch.Tensor,
-        speech: torch.Tensor = None,
+        ys: torch.Tensor, # 今回はtensor([[50256]], device='cuda:0')
+        states: List[Any], # 今回は[None]
+        xs: torch.Tensor, # 今回のxs.shapeはtorch.Size([1, 260, 256])
+        speech: torch.Tensor = None, # 今回はNone
     ) -> Tuple[torch.Tensor, List[Any]]:
-        import pdb;pdb.set_trace() # 現在はGPUを使っているので, ここで止まる.
-        model_kwargs = {
-            "encoder_outputs": ModelOutput(last_hidden_state=self.linear_in(xs)),
-        }
-        model_inputs = self.hf_generate.prepare_inputs_for_generation(
-            ys, **model_kwargs
-        )
-        outputs = self.hf_generate(
-            **model_inputs,
-            return_dict=True,
-            output_attentions=False,
-            output_hidden_states=False
-        )
-        next_token_logits = outputs.logits[:, -1, :]
-        next_token_scores = torch.nn.functional.log_softmax(
-            next_token_logits, dim=-1
-        )  # (batch_size * num_beams, vocab_size)
-        return next_token_scores, None
+        # import pdb;pdb.set_trace() # 現在はGPUを使っているので, ここで止まる.
+        # model_kwargs = {
+        #     "encoder_outputs": ModelOutput(last_hidden_state=self.linear_in(xs)),
+        # }
+        # model_inputs = self.hf_generate.prepare_inputs_for_generation(
+        #     ys, **model_kwargs
+        # )
+        # outputs = self.hf_generate(
+        #     **model_inputs,
+        #     return_dict=True,
+        #     output_attentions=False,
+        #     output_hidden_states=False
+        # )
+        # next_token_logits = outputs.logits[:, -1, :]
+        # next_token_scores = torch.nn.functional.log_softmax(
+        #     next_token_logits, dim=-1
+        # )  # (batch_size * num_beams, vocab_size)
+        # # import pdb;pdb.set_trace()
+        # return next_token_scores, None
 
+        # バッチサイズの取得
+        n_batch = len(ys)
+
+        # デコーダの状態を設定
+        if states is None or len(states) == 0 or states[0] is None:
+            batch_state = None
+        else:
+            # states: [batch, layer] の状態を [layer, batch] に変換
+            num_layers = len(states[0])
+            batch_state = []
+            for layer_idx in range(num_layers):
+                # 各層について、バッチ全体のキーとバリューを収集
+                layer_past = []
+                for b in range(n_batch):
+                    layer_past.append(states[b][layer_idx])
+                # 各テンソルをバッチ次元でスタック
+                # layer_past は [(key1, value1), (key2, value2), ..., (keyN, valueN)]
+                # これを (keys, values) の形に変換
+                stacked_layer_past = tuple(
+                    torch.stack([layer_past[b][i] for b in range(n_batch)], dim=0)
+                    for i in range(len(layer_past[0]))
+                )
+                batch_state.append(stacked_layer_past)
+            batch_state = tuple(batch_state)  # リストをタプルに変換
+
+        # 将来のトークン情報をマスク
+        from espnet.nets.pytorch_backend.transformer.mask import subsequent_mask
+        ys_mask = subsequent_mask(ys.size(1), device=ys.device).unsqueeze(0)  # (1, ylen, ylen)
+
+        # エンコーダのマスクを設定（今回は不要？）
+        memory_mask = None  
+
+        # forward_one_step を呼び出し
+        log_probs, new_cache = self.forward_one_step(
+            ys,
+            ys_mask,
+            xs,
+            memory_mask=memory_mask,
+            cache=batch_state,
+        )
+
+        # 状態を [layer, batch] から [batch, layer] に戻す
+        state_list = []
+        num_layers = len(new_cache)
+        for b in range(n_batch):
+            state_b = []
+            for layer_idx in range(num_layers):
+                # 各層のバッチ内の状態を取得
+                layer_past = tuple(past_state[b] for past_state in new_cache[layer_idx])
+                state_b.append(layer_past)
+            state_list.append(state_b)
+        # import pdb;pdb.set_trace()
+        # 元コードでは, 返り値の二つ目がNoneなので, state_listが必要かわからない.
+        return log_probs, state_list
 
 def get_hugging_face_model_network(model):
     if hasattr(model, "transformer"):
