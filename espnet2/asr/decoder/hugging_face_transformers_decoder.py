@@ -293,7 +293,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         logits = self.lm_head(last_hidden_state)  # (batch, 1, vocab_size)
 
          # ログソフトマックスを適用してスコアを取得
-        next_token_logits = logits[:, -1, :]  # (batch_size, vocab_size)
+        next_token_logits = logits[:, -1, :]  # (batch_size, vocab_size) ビームサーチ内での演算時にテンソルの形状不一致が発生していたため, シーケンスの最後のタイムステップのみを使用させている.
         log_probs = F.log_softmax(next_token_logits, dim=-1)
         # import pdb;pdb.set_trace()
         return log_probs, new_cache
