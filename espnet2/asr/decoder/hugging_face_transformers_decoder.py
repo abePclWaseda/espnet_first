@@ -262,13 +262,15 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         # トークンをエンベディング. ここの model_inputs作る処理がよくわからない.
         if self.causal_lm:
             # causal_lm モデルの場合 (今回はこちら？)
-            inputs_embeds = self.decoder_word_embeddings(tgt)  # (batch, 1, hidden_size)
+            # import pdb;pdb.set_trace()
+            inputs_embeds = self.decoder_word_embeddings(tgt[:, -1:])  # (batch, 1, hidden_size)
             model_inputs = {
                 "inputs_embeds": inputs_embeds,
                 "encoder_hidden_states": memory,
                 "encoder_attention_mask": memory_mask,
                 "past_key_values": cache,
                 "return_dict": True,
+                "use_cache": True
             }
         else:
             # encoder-decoder モデルの場合
