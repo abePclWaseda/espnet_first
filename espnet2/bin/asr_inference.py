@@ -46,7 +46,7 @@ from espnet.nets.scorers.length_bonus import LengthBonus
 from espnet.utils.cli_utils import get_commandline_args
 
 try:
-    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM
+    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoConfig
     from transformers.file_utils import ModelOutput
 
     is_transformers_available = True
@@ -136,6 +136,7 @@ class Speech2Text:
             asr_train_config, asr_model_file, device
         )
 
+        # import pdb;pdb.set_trace()
         if enh_s2t_task:
             asr_model.inherite_attributes(
                 inherite_s2t_attrs=[
@@ -157,6 +158,7 @@ class Speech2Text:
                 asr_model, qconfig_spec=qconfig_spec, dtype=quantize_dtype
             )
 
+        # import pdb;pdb.set_trace()
         decoder = asr_model.decoder
 
         ctc = CTCPrefixScorer(ctc=asr_model.ctc, eos=asr_model.eos)
@@ -197,6 +199,7 @@ class Speech2Text:
         scorers["ngram"] = ngram
 
         # 4. Build BeamSearch object
+        # import pdb;pdb.set_trace()
         if asr_model.use_transducer_decoder:
             # In multi-blank RNNT, we assume all big blanks are
             # just before the standard blank in token_list
@@ -238,8 +241,11 @@ class Speech2Text:
                 )
 
             if decoder.causal_lm:
+                # import pdb;pdb.set_trace()
+                config = AutoConfig.from_pretrained(decoder.model_name_or_path)
+                config.add_cross_attention = True
                 hugging_face_model = AutoModelForCausalLM.from_pretrained(
-                    decoder.model_name_or_path
+                    decoder.model_name_or_path, config=config
                 )
 
                 hugging_face_model.resize_token_embeddings(decoder.lm_head.out_features)
@@ -309,6 +315,7 @@ class Speech2Text:
             beam_search_transducer = None
             hugging_face_model = None
             hugging_face_linear_in = None
+            # import pdb;pdb.set_trace()
 
             weights = dict(
                 decoder=1.0 - ctc_weight,

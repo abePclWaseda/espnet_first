@@ -1,6 +1,10 @@
-beam_size: 20
+beam_size: 10
 ctc_weight: 0.3
 lm_weight: 0.0
 maxlenratio: 0.0
 minlenratio: 0.0
 penalty: 0.0
+hugging_face_decoder: True
+hugging_face_decoder_conf: 
+  num_beams: 20
+  max_new_tokens: 50 
