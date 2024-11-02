@@ -309,7 +309,32 @@ class Speech2Text:
                     hugging_face_model.config.eos_token_id
                 )
 
-            beam_search = None
+            weights = dict(
+                decoder=1.0 - ctc_weight,
+                ctc=ctc_weight,
+                lm=lm_weight,
+                ngram=ngram_weight,
+                length_bonus=penalty,
+            )
+
+            scorers["decoder"] = hugging_face_model
+            beam_search = BeamSearch(
+                beam_size=beam_size,
+                weights=weights,
+                scorers=scorers,
+                sos=asr_model.sos,
+                eos=asr_model.eos,
+                vocab_size=len(token_list),
+                token_list=token_list,
+                pre_beam_score_key=None if ctc_weight == 1.0 else "full",
+                normalize_length=normalize_length,
+            )
+            beam_search.to(device=device, dtype=getattr(torch, dtype)).eval()
+            for scorer in scorers.values():
+                if isinstance(scorer, torch.nn.Module):
+                    scorer.to(device=device, dtype=getattr(torch, dtype)).eval()
+            logging.info(f"Beam_search: {beam_search}")
+            logging.info(f"Decoding device={device}, dtype={dtype}")
             beam_search_transducer = None
         else:
             beam_search_transducer = None
@@ -609,14 +634,15 @@ class Speech2Text:
                     device=enc.device,
                 )
 
-                yseq = self.hugging_face_model.generate(
-                    input_ids.repeat(num_beams, 1),
-                    inputs_embeds=forward_args["inputs_embeds"].repeat(num_beams, 1, 1),
-                    attention_mask=input_ids.repeat(num_beams, 1),
-                    **self.hugging_face_decoder_conf,
-                )
+                # import pdb;pdb.set_trace()
+                # yseq = self.hugging_face_model.generate(
+                #     input_ids.repeat(num_beams, 1),
+                #     inputs_embeds=forward_args["inputs_embeds"].repeat(num_beams, 1, 1),
+                #     attention_mask=input_ids.repeat(num_beams, 1),
+                #     **self.hugging_face_decoder_conf,
+                # )
 
-                yseq = yseq[:, input_ids.shape[1] - 1 :]
+                # yseq = yseq[:, input_ids.shape[1] - 1 :]
             else:
                 decoder_start_token_id = (
                     self.hugging_face_model.config.decoder_start_token_id
@@ -627,7 +653,10 @@ class Speech2Text:
                     **self.hugging_face_decoder_conf,
                 )
 
-            nbest_hyps = [Hypothesis(yseq=yseq[0])]
+            # nbest_hyps = [Hypothesis(yseq=yseq[0])]
+            nbest_hyps = self.beam_search(
+                x=enc, maxlenratio=self.maxlenratio, minlenratio=self.minlenratio
+            )
             logging.info(
                 "best hypo: "
                 + self.tokenizer.tokens2text(
