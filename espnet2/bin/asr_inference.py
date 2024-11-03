@@ -290,8 +290,8 @@ class Speech2Text:
                     )
                     del hugging_face_model.encoder
 
-            del asr_model.decoder.lm_head
-            del asr_model.decoder.decoder
+            # del asr_model.decoder.lm_head
+            # del asr_model.decoder.decoder
 
             hugging_face_linear_in = decoder.linear_in
             hugging_face_model.to(device=device).eval()
@@ -317,7 +317,8 @@ class Speech2Text:
                 length_bonus=penalty,
             )
 
-            scorers["decoder"] = hugging_face_model
+            # scorers["decoder"] = decoder
+            # import pdb;pdb.set_trace()
             beam_search = BeamSearch(
                 beam_size=beam_size,
                 weights=weights,
@@ -370,6 +371,7 @@ class Speech2Text:
                     token_list=token_list,
                 )
             else:
+                # import pdb;pdb.set_trace()
                 beam_search = BeamSearch(
                     beam_size=beam_size,
                     weights=weights,
@@ -617,24 +619,25 @@ class Speech2Text:
             )
         elif self.hugging_face_model:
             num_beams = self.hugging_face_decoder_conf["num_beams"]
-            enc = self.hugging_face_linear_in(enc).unsqueeze(0)
+            # enc = self.hugging_face_linear_in(enc).unsqueeze(0)
             if self.asr_model.decoder.causal_lm:
-                forward_args, _ = self.asr_model.decoder.add_prefix_postfix(
-                    enc,
-                    torch.tensor([enc.shape[1]]).to(enc.device),
-                    torch.ones([1, 1], dtype=int, device=enc.device),
-                    torch.ones([1], dtype=int, device=enc.device),
-                )
+                # forward_args, _ = self.asr_model.decoder.add_prefix_postfix(
+                #     enc,
+                #     torch.tensor([enc.shape[1]]).to(enc.device),
+                #     torch.ones([1, 1], dtype=int, device=enc.device),
+                #     torch.ones([1], dtype=int, device=enc.device),
+                # )
 
                 # input_ids are ignored if we provide inputs_embeds,
                 # but input_ids are still required, so we make fake ones
-                input_ids = torch.ones(
-                    [1, forward_args["inputs_embeds"].shape[1]],
-                    dtype=int,
-                    device=enc.device,
-                )
+                # input_ids = torch.ones(
+                #     [1, forward_args["inputs_embeds"].shape[1]],
+                #     dtype=int,
+                #     device=enc.device,
+                # )
 
-                # import pdb;pdb.set_trace()
+                import pdb;pdb.set_trace()
+
                 # yseq = self.hugging_face_model.generate(
                 #     input_ids.repeat(num_beams, 1),
                 #     inputs_embeds=forward_args["inputs_embeds"].repeat(num_beams, 1, 1),
@@ -654,6 +657,9 @@ class Speech2Text:
                 )
 
             # nbest_hyps = [Hypothesis(yseq=yseq[0])]
+
+            # import pdb;pdb.set_trace()
+            # enc = self.hugging_face_linear_in(enc)
             nbest_hyps = self.beam_search(
                 x=enc, maxlenratio=self.maxlenratio, minlenratio=self.minlenratio
             )
