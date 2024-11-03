@@ -636,7 +636,8 @@ class Speech2Text:
                 #     device=enc.device,
                 # )
 
-                import pdb;pdb.set_trace()
+                # import pdb;pdb.set_trace()
+                hogehoge = {}
 
                 # yseq = self.hugging_face_model.generate(
                 #     input_ids.repeat(num_beams, 1),
