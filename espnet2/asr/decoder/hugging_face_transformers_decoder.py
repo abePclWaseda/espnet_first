@@ -301,29 +301,51 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         return log_probs, new_cache
 
     def score(self, ys, state, x, speech=None):
-        model_kwargs = {
-            "encoder_outputs": ModelOutput(
-                last_hidden_state=self.linear_in(x).unsqueeze(0)
-            ),
-        }
+        # model_kwargs = {
+        #     "encoder_outputs": ModelOutput(
+        #         last_hidden_state=self.linear_in(x).unsqueeze(0)
+        #     ),
+        # }
         # TODO(brian): caching
-        import pdb;pdb.set_trace()
-        # ここから
-        model_inputs = self.hf_generate.prepare_inputs_for_generation(
-            ys.unsqueeze(0), **model_kwargs
+        # import pdb;pdb.set_trace()
+        # model_inputs = self.hf_generate.prepare_inputs_for_generation(
+        #     ys.unsqueeze(0), **model_kwargs
+        # )
+        # outputs = self.hf_generate(
+        #     **model_inputs,
+        #     return_dict=True,
+        #     output_attentions=False,
+        #     output_hidden_states=False
+        # )
+        # next_token_logits = outputs.logits[:, -1, :]
+        # next_token_scores = torch.nn.functional.log_softmax(
+        #     next_token_logits, dim=-1
+        # )  # (batch_size * num_beams, vocab_size)
+        # return next_token_scores.squeeze(0), None
+    
+        # 状態がない場合はNoneに設定
+        if state is None:
+            decoder_state = None
+        else:
+            decoder_state = state
+        
+        # サブシーケントマスクを作成
+        from espnet.nets.pytorch_backend.transformer.mask import subsequent_mask
+        ys_mask = subsequent_mask(ys.size(0), device=ys.device).unsqueeze(0)  # (1, ylen, ylen)
+
+        # `forward_one_step`を呼び出し
+        log_probs, new_cache = self.forward_one_step(
+            ys.unsqueeze(0),
+            ys_mask,
+            x.unsqueeze(0),
+            memory_mask=None,
+            cache=decoder_state,
         )
-        outputs = self.hf_generate(
-            **model_inputs,
-            return_dict=True,
-            output_attentions=False,
-            output_hidden_states=False
-        )
-        next_token_logits = outputs.logits[:, -1, :]
-        # ここまでの内容を修正(hf_generateを使わず、/asr/decoder/transformer_decoder.pyと似たような挙動にする。(次の文字を出力するようなコード))
-        next_token_scores = torch.nn.functional.log_softmax(
-            next_token_logits, dim=-1
-        )  # (batch_size * num_beams, vocab_size)
-        return next_token_scores.squeeze(0), None
+
+        # バッチ次元を削除
+        log_probs = log_probs.squeeze(0)
+
+        return log_probs, new_cache
 
     def batch_score(
         self,
