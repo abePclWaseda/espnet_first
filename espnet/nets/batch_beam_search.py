@@ -297,6 +297,7 @@ class BatchBeamSearch(BeamSearch):
             )
 
         for k in self.full_scorers:
+            # import pdb;pdb.set_trace()
             weighted_scores += self.weights[k] * scores[k]
         # partial scoring
         if self.do_pre_beam:

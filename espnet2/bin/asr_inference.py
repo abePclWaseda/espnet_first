@@ -46,7 +46,7 @@ from espnet.nets.scorers.length_bonus import LengthBonus
 from espnet.utils.cli_utils import get_commandline_args
 
 try:
-    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM
+    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoConfig
     from transformers.file_utils import ModelOutput
 
     is_transformers_available = True
@@ -136,6 +136,8 @@ class Speech2Text:
             asr_train_config, asr_model_file, device
         )
 
+        self.check_model_parameters(asr_model, asr_model_file)
+        # import pdb;pdb.set_trace()
         if enh_s2t_task:
             asr_model.inherite_attributes(
                 inherite_s2t_attrs=[
@@ -157,6 +159,7 @@ class Speech2Text:
                 asr_model, qconfig_spec=qconfig_spec, dtype=quantize_dtype
             )
 
+        # import pdb;pdb.set_trace()
         decoder = asr_model.decoder
 
         ctc = CTCPrefixScorer(ctc=asr_model.ctc, eos=asr_model.eos)
@@ -197,6 +200,7 @@ class Speech2Text:
         scorers["ngram"] = ngram
 
         # 4. Build BeamSearch object
+        # import pdb;pdb.set_trace()
         if asr_model.use_transducer_decoder:
             # In multi-blank RNNT, we assume all big blanks are
             # just before the standard blank in token_list
@@ -238,8 +242,11 @@ class Speech2Text:
                 )
 
             if decoder.causal_lm:
+                # import pdb;pdb.set_trace()
+                config = AutoConfig.from_pretrained(decoder.model_name_or_path)
+                config.add_cross_attention = True
                 hugging_face_model = AutoModelForCausalLM.from_pretrained(
-                    decoder.model_name_or_path
+                    decoder.model_name_or_path, config=config
                 )
 
                 hugging_face_model.resize_token_embeddings(decoder.lm_head.out_features)
@@ -247,8 +254,25 @@ class Speech2Text:
                 transformer = get_hugging_face_model_network(hugging_face_model)
                 transformer.load_state_dict(decoder.decoder.state_dict())
 
+                # # decoder.decoder.state_dict() から transformer に存在するキーのみを抽出
+                # import pdb;pdb.set_trace()
+                # decoder_state_dict = decoder.decoder.state_dict()
+                # transformer_state_dict = transformer.state_dict()
+                # compatible_decoder_state_dict = {
+                #     k: v for k, v in decoder_state_dict.items() if k in transformer_state_dict
+                # }
+                # transformer.load_state_dict(compatible_decoder_state_dict, strict=False)
+
                 lm_head = get_hugging_face_model_lm_head(hugging_face_model)
                 lm_head.load_state_dict(decoder.lm_head.state_dict())
+
+                # # decoder.lm_head.state_dict() から lm_head に存在するキーのみを抽出
+                # decoder_lm_head_state_dict = decoder.lm_head.state_dict()
+                # lm_head_state_dict = lm_head.state_dict()
+                # compatible_lm_head_state_dict = {
+                #     k: v for k, v in decoder_lm_head_state_dict.items() if k in lm_head_state_dict
+                # }
+                # lm_head.load_state_dict(compatible_lm_head_state_dict, strict=False)
             else:
                 hugging_face_model = AutoModelForSeq2SeqLM.from_pretrained(
                     decoder.model_name_or_path
@@ -267,8 +291,8 @@ class Speech2Text:
                     )
                     del hugging_face_model.encoder
 
-            del asr_model.decoder.lm_head
-            del asr_model.decoder.decoder
+            # del asr_model.decoder.lm_head
+            # del asr_model.decoder.decoder
 
             hugging_face_linear_in = decoder.linear_in
             hugging_face_model.to(device=device).eval()
@@ -286,12 +310,39 @@ class Speech2Text:
                     hugging_face_model.config.eos_token_id
                 )
 
-            beam_search = None
+            weights = dict(
+                decoder=1.0 - ctc_weight,
+                ctc=ctc_weight,
+                lm=lm_weight,
+                ngram=ngram_weight,
+                length_bonus=penalty,
+            )
+
+            # scorers["decoder"] = decoder
+            # import pdb;pdb.set_trace()
+            beam_search = BeamSearch(
+                beam_size=beam_size,
+                weights=weights,
+                scorers=scorers,
+                sos=asr_model.sos,
+                eos=asr_model.eos,
+                vocab_size=len(token_list),
+                token_list=token_list,
+                pre_beam_score_key=None if ctc_weight == 1.0 else "full",
+                normalize_length=normalize_length,
+            )
+            beam_search.to(device=device, dtype=getattr(torch, dtype)).eval()
+            for scorer in scorers.values():
+                if isinstance(scorer, torch.nn.Module):
+                    scorer.to(device=device, dtype=getattr(torch, dtype)).eval()
+            logging.info(f"Beam_search: {beam_search}")
+            logging.info(f"Decoding device={device}, dtype={dtype}")
             beam_search_transducer = None
         else:
             beam_search_transducer = None
             hugging_face_model = None
             hugging_face_linear_in = None
+            # import pdb;pdb.set_trace()
 
             weights = dict(
                 decoder=1.0 - ctc_weight,
@@ -321,6 +372,7 @@ class Speech2Text:
                     token_list=token_list,
                 )
             else:
+                # import pdb;pdb.set_trace()
                 beam_search = BeamSearch(
                     beam_size=beam_size,
                     weights=weights,
@@ -450,6 +502,7 @@ class Speech2Text:
         self.hugging_face_model = hugging_face_model
         self.hugging_face_linear_in = hugging_face_linear_in
         self.hugging_face_decoder_conf = hugging_face_decoder_conf
+        # import pdb;pdb.set_trace();
         self.maxlenratio = maxlenratio
         self.minlenratio = minlenratio
         self.device = device
@@ -523,7 +576,8 @@ class Speech2Text:
             assert len(enc) == 1, len(enc)
 
             # c. Passed the encoder result and the beam search
-            results = self._decode_single_sample(enc[0])
+            # import pdb;pdb.set_trace()
+            results = self._decode_single_sample(enc[0]) # ここでbeam searchが行われる.
 
             # Encoder intermediate CTC predictions
             if intermediate_outs is not None:
@@ -566,31 +620,34 @@ class Speech2Text:
             )
         elif self.hugging_face_model:
             num_beams = self.hugging_face_decoder_conf["num_beams"]
-            enc = self.hugging_face_linear_in(enc).unsqueeze(0)
+            # enc = self.hugging_face_linear_in(enc).unsqueeze(0)
             if self.asr_model.decoder.causal_lm:
-                forward_args, _ = self.asr_model.decoder.add_prefix_postfix(
-                    enc,
-                    torch.tensor([enc.shape[1]]).to(enc.device),
-                    torch.ones([1, 1], dtype=int, device=enc.device),
-                    torch.ones([1], dtype=int, device=enc.device),
-                )
+                # forward_args, _ = self.asr_model.decoder.add_prefix_postfix(
+                #     enc,
+                #     torch.tensor([enc.shape[1]]).to(enc.device),
+                #     torch.ones([1, 1], dtype=int, device=enc.device),
+                #     torch.ones([1], dtype=int, device=enc.device),
+                # )
 
                 # input_ids are ignored if we provide inputs_embeds,
                 # but input_ids are still required, so we make fake ones
-                input_ids = torch.ones(
-                    [1, forward_args["inputs_embeds"].shape[1]],
-                    dtype=int,
-                    device=enc.device,
-                )
+                # input_ids = torch.ones(
+                #     [1, forward_args["inputs_embeds"].shape[1]],
+                #     dtype=int,
+                #     device=enc.device,
+                # )
 
-                yseq = self.hugging_face_model.generate(
-                    input_ids.repeat(num_beams, 1),
-                    inputs_embeds=forward_args["inputs_embeds"].repeat(num_beams, 1, 1),
-                    attention_mask=input_ids.repeat(num_beams, 1),
-                    **self.hugging_face_decoder_conf,
-                )
+                # import pdb;pdb.set_trace()
+                hogehoge = {}
 
-                yseq = yseq[:, input_ids.shape[1] - 1 :]
+                # yseq = self.hugging_face_model.generate(
+                #     input_ids.repeat(num_beams, 1),
+                #     inputs_embeds=forward_args["inputs_embeds"].repeat(num_beams, 1, 1),
+                #     attention_mask=input_ids.repeat(num_beams, 1),
+                #     **self.hugging_face_decoder_conf,
+                # )
+
+                # yseq = yseq[:, input_ids.shape[1] - 1 :]
             else:
                 decoder_start_token_id = (
                     self.hugging_face_model.config.decoder_start_token_id
@@ -601,7 +658,13 @@ class Speech2Text:
                     **self.hugging_face_decoder_conf,
                 )
 
-            nbest_hyps = [Hypothesis(yseq=yseq[0])]
+            # nbest_hyps = [Hypothesis(yseq=yseq[0])]
+
+            # import pdb;pdb.set_trace()
+            # enc = self.hugging_face_linear_in(enc)
+            nbest_hyps = self.beam_search(
+                x=enc, maxlenratio=self.maxlenratio, minlenratio=self.minlenratio
+            )
             logging.info(
                 "best hypo: "
                 + self.tokenizer.tokens2text(
@@ -616,6 +679,8 @@ class Speech2Text:
                     for module in self.beam_search.nn_dict.decoder.modules():
                         if hasattr(module, "setup_step"):
                             module.setup_step()
+            # import pdb;pdb.set_trace()
+            # ここでbeam_searchメソッドを使用
             nbest_hyps = self.beam_search(
                 x=enc, maxlenratio=self.maxlenratio, minlenratio=self.minlenratio
             )
@@ -676,6 +741,70 @@ class Speech2Text:
             kwargs.update(**d.download_and_unpack(model_tag))
 
         return Speech2Text(**kwargs)
+    
+    def check_model_parameters(self, model: torch.nn.Module, model_file: str):
+        model_state_dict = {k: v.cpu() for k, v in model.state_dict().items()}
+
+        try:
+            loaded_state_dict = torch.load(model_file, map_location="cpu")
+        except Exception as e:
+            logging.error(f"モデルファイルのロードに失敗しました: {e}")
+            return
+        
+        missing_keys = []
+        unexpected_keys = []
+        mismatched_keys = []
+
+        # model_file の state_dict に存在するキーを確認
+        for key in loaded_state_dict:
+            if key not in model_state_dict:
+                missing_keys.append(key)
+            else:
+                # データ型を揃える（float32にキャスト）
+                model_tensor = model_state_dict[key].float()
+                loaded_tensor = loaded_state_dict[key].float()
+
+                # テンソルが一致するか確認
+                if not torch.allclose(model_tensor, loaded_tensor, atol=1e-6):
+                    mismatched_keys.append(key)
+
+        # model の state_dict にのみ存在するキーを確認
+        for key in model_state_dict:
+            if key not in loaded_state_dict:
+                unexpected_keys.append(key)
+
+        # 結果のログ出力
+        if missing_keys:
+            logging.warning(f"モデルに存在しないキー: {missing_keys}")
+        if unexpected_keys:
+            logging.warning(f"ロードした state_dict に存在しないキー: {unexpected_keys}")
+        if mismatched_keys:
+            logging.warning(f"値が一致しないキー: {mismatched_keys}")
+        if not missing_keys and not unexpected_keys and not mismatched_keys:
+            logging.info("モデルのパラメータが正しくロードされています。")
+
+        # 特定のパラメータを詳細に表示
+        cross_attention_keys = [k for k in loaded_state_dict.keys() if "crossattention" in k.lower() or "cross_attention" in k.lower()]
+        logging.info(f"クロスアテンション層のパラメータ数: {len(cross_attention_keys)}")
+        logging.info(f"クロスアテンション層のキーの一部: {cross_attention_keys[:10]}")  # 最初の10個を表示
+
+        # 各クロスアテンション層の c_attn.weight, c_attn.bias, q_attn.weight, q_attn.bias, c_proj.weight, c_proj.bias を確認
+        for i in range(12):
+            param_names = [
+                "c_attn.weight",
+                "c_attn.bias",
+                "q_attn.weight",
+                "q_attn.bias",
+                "c_proj.weight",
+                "c_proj.bias",
+            ]
+            for param in param_names:
+                key = f"decoder.decoder.h.{i}.crossattention.{param}"
+                if key in model_state_dict:
+                    logging.info(f"{key}: {model_state_dict[key].flatten()[:10]}")
+                else:
+                    logging.warning(f"Block {i} のクロスアテンションパラメータ {param} が見つかりません。")
+
 
 
 @typechecked
