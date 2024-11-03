@@ -136,6 +136,7 @@ class Speech2Text:
             asr_train_config, asr_model_file, device
         )
 
+        self.check_model_parameters(asr_model, asr_model_file)
         # import pdb;pdb.set_trace()
         if enh_s2t_task:
             asr_model.inherite_attributes(
@@ -740,6 +741,78 @@ class Speech2Text:
             kwargs.update(**d.download_and_unpack(model_tag))
 
         return Speech2Text(**kwargs)
+    
+    def check_model_parameters(self, model: torch.nn.Module, model_file: str):
+        model_state_dict = {k: v.cpu() for k, v in model.state_dict().items()}
+
+        try:
+            loaded_state_dict = torch.load(model_file, map_location="cpu")
+        except Exception as e:
+            logging.error(f"モデルファイルのロードに失敗しました: {e}")
+            return
+        
+        missing_keys = []
+        unexpected_keys = []
+        mismatched_keys = []
+
+        # model_file の state_dict に存在するキーを確認
+        for key in loaded_state_dict:
+            if key not in model_state_dict:
+                missing_keys.append(key)
+            else:
+                # データ型を揃える（float32にキャスト）
+                model_tensor = model_state_dict[key].float()
+                loaded_tensor = loaded_state_dict[key].float()
+
+                # テンソルが一致するか確認
+                if not torch.allclose(model_tensor, loaded_tensor, atol=1e-6):
+                    mismatched_keys.append(key)
+
+        # model の state_dict にのみ存在するキーを確認
+        for key in model_state_dict:
+            if key not in loaded_state_dict:
+                unexpected_keys.append(key)
+
+        # 結果のログ出力
+        if missing_keys:
+            logging.warning(f"モデルに存在しないキー: {missing_keys}")
+        if unexpected_keys:
+            logging.warning(f"ロードした state_dict に存在しないキー: {unexpected_keys}")
+        if mismatched_keys:
+            logging.warning(f"値が一致しないキー: {mismatched_keys}")
+        if not missing_keys and not unexpected_keys and not mismatched_keys:
+            logging.info("モデルのパラメータが正しくロードされています。")
+
+        # 特定のパラメータを詳細に表示（クロスアテンション層）
+        cross_attention_keys = [k for k in loaded_state_dict.keys() if "crossattention" in k.lower() or "cross_attention" in k.lower()]
+        logging.info(f"クロスアテンション層のパラメータ数: {len(cross_attention_keys)}")
+        logging.info(f"クロスアテンション層のキーの一部: {cross_attention_keys[:10]}")  # 最初の10個を表示
+
+        # specific_key = "decoder.decoder.h.11.crossattention.q_attn.bias" 
+        # alternative_key = "decoder.decoder.h.11.cross_attention.q_attn.bias" 
+
+        # if specific_key in loaded_state_dict:
+        #     logging.info(f"{specific_key}: {loaded_state_dict[specific_key].flatten()[-10:]}")
+        # elif alternative_key in loaded_state_dict:
+        #     logging.info(f"{alternative_key}: {loaded_state_dict[alternative_key].flatten()[-10:]}")
+        # else:
+        #     logging.warning(f"{specific_key} および {alternative_key} はstate_dictのキーに含まれていません。")
+
+        # 全てのクロスアテンション層の特定のパラメータを表示（bias）
+        for i in range(12):
+            key_variants = [
+                f"decoder.decoder.h.{i}.crossattention.q_attn.bias",
+                f"decoder.decoder.h.{i}.cross_attention.q_attn.bias"
+            ]
+            found = False
+            for key in key_variants:
+                if key in loaded_state_dict:
+                    logging.info(f"{key}: {loaded_state_dict[key].flatten()[:10]}")  # 最初の10個の値を表示
+                    found = True
+                    break
+            if not found:
+                logging.warning(f"Block {i} のクロスアテンションbiasパラメータが見つかりません。")
+
 
 
 @typechecked
