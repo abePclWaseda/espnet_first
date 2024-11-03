@@ -783,35 +783,27 @@ class Speech2Text:
         if not missing_keys and not unexpected_keys and not mismatched_keys:
             logging.info("モデルのパラメータが正しくロードされています。")
 
-        # 特定のパラメータを詳細に表示（クロスアテンション層）
+        # 特定のパラメータを詳細に表示
         cross_attention_keys = [k for k in loaded_state_dict.keys() if "crossattention" in k.lower() or "cross_attention" in k.lower()]
         logging.info(f"クロスアテンション層のパラメータ数: {len(cross_attention_keys)}")
         logging.info(f"クロスアテンション層のキーの一部: {cross_attention_keys[:10]}")  # 最初の10個を表示
 
-        # specific_key = "decoder.decoder.h.11.crossattention.q_attn.bias" 
-        # alternative_key = "decoder.decoder.h.11.cross_attention.q_attn.bias" 
-
-        # if specific_key in loaded_state_dict:
-        #     logging.info(f"{specific_key}: {loaded_state_dict[specific_key].flatten()[-10:]}")
-        # elif alternative_key in loaded_state_dict:
-        #     logging.info(f"{alternative_key}: {loaded_state_dict[alternative_key].flatten()[-10:]}")
-        # else:
-        #     logging.warning(f"{specific_key} および {alternative_key} はstate_dictのキーに含まれていません。")
-
-        # 全てのクロスアテンション層の特定のパラメータを表示（bias）
+        # 各クロスアテンション層の c_attn.weight, c_attn.bias, q_attn.weight, q_attn.bias, c_proj.weight, c_proj.bias を確認
         for i in range(12):
-            key_variants = [
-                f"decoder.decoder.h.{i}.crossattention.q_attn.bias",
-                f"decoder.decoder.h.{i}.cross_attention.q_attn.bias"
+            param_names = [
+                "c_attn.weight",
+                "c_attn.bias",
+                "q_attn.weight",
+                "q_attn.bias",
+                "c_proj.weight",
+                "c_proj.bias",
             ]
-            found = False
-            for key in key_variants:
-                if key in loaded_state_dict:
-                    logging.info(f"{key}: {loaded_state_dict[key].flatten()[:10]}")  # 最初の10個の値を表示
-                    found = True
-                    break
-            if not found:
-                logging.warning(f"Block {i} のクロスアテンションbiasパラメータが見つかりません。")
+            for param in param_names:
+                key = f"decoder.decoder.h.{i}.crossattention.{param}"
+                if key in model_state_dict:
+                    logging.info(f"{key}: {model_state_dict[key].flatten()[:10]}")
+                else:
+                    logging.warning(f"Block {i} のクロスアテンションパラメータ {param} が見つかりません。")
 
 
 
