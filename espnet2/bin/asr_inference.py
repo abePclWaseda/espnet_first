@@ -447,6 +447,7 @@ class Speech2Text:
         self.converter = converter
         self.tokenizer = tokenizer
         self.beam_search = beam_search
+        # self.check_model_parameters(self.beam_search.nn_dict['decoder'], asr_model_file)
         self.beam_search_transducer = beam_search_transducer
         self.hugging_face_model = hugging_face_model
         self.hugging_face_linear_in = hugging_face_linear_in
@@ -679,7 +680,57 @@ class Speech2Text:
             kwargs.update(**d.download_and_unpack(model_tag))
 
         return Speech2Text(**kwargs)
+    
+    def check_model_parameters(self, decoder: torch.nn.Module, model_file: str):
+        # decoder: asr_model.decoder
 
+        decoder_state_dict = {k: v.cpu() for k, v in decoder.state_dict().items()}
+
+        try:
+            loaded_state = torch.load(model_file, map_location="cpu")
+            if 'model' in loaded_state:
+                loaded_state_dict = loaded_state['model']
+            elif 'state_dict' in loaded_state:
+                loaded_state_dict = loaded_state['state_dict']
+            else:
+                loaded_state_dict = loaded_state
+        except Exception as e:
+            logging.error(f"モデルファイルのロードに失敗しました: {e}")
+            return
+
+        model_decoder_state_dict = {k[len('decoder.'):]: v for k, v in loaded_state_dict.items() if k.startswith('decoder.')}
+
+        missing_keys = []
+        mismatched_keys = []
+
+        # パラメータの比較
+        for key in decoder_state_dict:
+            if key not in model_decoder_state_dict:
+                missing_keys.append(key)
+            else:
+                decoder_tensor = decoder_state_dict[key].float()
+                model_tensor = model_decoder_state_dict[key].float()
+
+                if not torch.allclose(decoder_tensor, model_tensor, atol=1e-6):
+                    mismatched_keys.append(key)
+
+        if missing_keys:
+            logging.warning(f"モデルに存在しないキー: {missing_keys}")
+        if mismatched_keys:
+            logging.warning(f"値が一致しないキー: {mismatched_keys}")
+        if not missing_keys and not mismatched_keys:
+            logging.info("デコーダのパラメータが正しくロードされています。")
+
+        # 特定のパラメータを詳細に表示
+        key = 'decoder.h.0.crossattention.c_attn.weight'
+        if key in model_decoder_state_dict:
+            logging.info(f"{key} のモデル側の値: {model_decoder_state_dict[key].flatten()[:10]}")
+        else:
+            logging.warning(f"{key} がモデルに存在しません。")
+        if key in decoder_state_dict:
+            logging.info(f"{key} のデコーダ側の値: {decoder_state_dict[key].flatten()[:10]}")
+        else:
+            logging.warning(f"{key} がデコーダに存在しません。")
 
 @typechecked
 def inference(
