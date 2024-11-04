@@ -258,24 +258,26 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         return_hs: bool = False,
     ) -> Tuple[torch.Tensor, List[torch.Tensor]]:
         memory = self.linear_in(memory)
-        if self.causal_lm:
-            inputs_embeds = self.decoder_word_embeddings(tgt[:, -1:])  # (batch, 1, hidden_size)
-            model_inputs = {
-                "inputs_embeds": inputs_embeds,
-                "encoder_hidden_states": memory,
-                "encoder_attention_mask": memory_mask,
-                "past_key_values": cache,
-                "return_dict": True,
-                "use_cache": True
-            }
-        else:
-            model_inputs = {
-                "input_ids": tgt,
-                "encoder_hidden_states": memory,
-                "encoder_attention_mask": memory_mask,
-                "past_key_values": cache,
-                "return_dict": True,
-            }
+        # import pdb;pdb.set_trace()
+        
+        inputs_embeds = self.decoder_word_embeddings(tgt[:, -1:])  
+        model_inputs = {
+            "inputs_embeds": inputs_embeds,
+            "encoder_hidden_states": memory,
+            "encoder_attention_mask": memory_mask,
+            "past_key_values": cache,
+            "return_dict": True,
+            "use_cache": True
+        }
+    
+        # model_inputs = {
+        #     "input_ids": tgt,
+        #     "encoder_hidden_states": memory,
+        #     "encoder_attention_mask": memory_mask,
+        #     "past_key_values": cache,
+        #     "return_dict": True,
+        #     "use_cache": True
+        # }
         
         outputs = self.decoder(**model_inputs)
 

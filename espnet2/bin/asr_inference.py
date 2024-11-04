@@ -321,6 +321,7 @@ class Speech2Text:
                     token_list=token_list,
                 )
             else:
+                # import pdb;pdb.set_trace()
                 beam_search = BeamSearch(
                     beam_size=beam_size,
                     weights=weights,
@@ -450,6 +451,7 @@ class Speech2Text:
         self.hugging_face_model = hugging_face_model
         self.hugging_face_linear_in = hugging_face_linear_in
         self.hugging_face_decoder_conf = hugging_face_decoder_conf
+        # import pdb;pdb.set_trace()
         self.maxlenratio = maxlenratio
         self.minlenratio = minlenratio
         self.device = device
@@ -611,6 +613,7 @@ class Speech2Text:
             )
         else:
             if hasattr(self.beam_search.nn_dict, "decoder"):
+                # import pdb;pdb.set_trace()
                 if isinstance(self.beam_search.nn_dict.decoder, S4Decoder):
                     # Setup: required for S4 autoregressive generation
                     for module in self.beam_search.nn_dict.decoder.modules():
