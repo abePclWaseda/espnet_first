@@ -16,7 +16,7 @@ from espnet2.asr.decoder.abs_decoder import AbsDecoder
 from espnet.nets.pytorch_backend.nets_utils import make_pad_mask
 
 try:
-    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer
+    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, AutoConfig
     from transformers.file_utils import ModelOutput
 
     is_transformers_available = True
@@ -56,7 +56,12 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         self.causal_lm = causal_lm
 
         if self.causal_lm:
-            model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
+            config = AutoConfig.from_pretrained(model_name_or_path)
+            config.add_cross_attention = True
+
+            # 設定を使用してモデルをロード
+            model = AutoModelForCausalLM.from_pretrained(model_name_or_path, config=config)
+            object.__setattr__(self, 'hf_generate', model)
             self.decoder = get_hugging_face_model_network(model)
 
             if hasattr(self.decoder, "word_embeddings"):
@@ -65,6 +70,8 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
                 self.decoder_word_embeddings = self.decoder.embed_in
             elif hasattr(self.decoder, "embed_tokens"):
                 self.decoder_word_embeddings = self.decoder.embed_tokens
+            elif hasattr(self.decoder, "wte"):
+                self.decoder_word_embeddings = self.decoder.wte
             else:
                 raise Exception("Can not find the word embeddings attribute")
 
@@ -231,31 +238,101 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         else:
             args["attention_mask"] = hs_mask
 
+        # ここで encoder_hidden_states と encoder_attention_mask を追加
+        args["encoder_hidden_states"] = enc_out
+        hs_mask = (~make_pad_mask(hlens)).to(enc_out.device).float()
+        args["encoder_attention_mask"] = hs_mask
+
         args["return_dict"] = True
 
         return args, no_loss_lengths
 
+    def forward_one_step(
+        self,
+        tgt: torch.Tensor,
+        tgt_mask: torch.Tensor,
+        memory: torch.Tensor,
+        memory_mask: torch.Tensor = None,
+        *,
+        cache: List[torch.Tensor] = None,
+        return_hs: bool = False,
+    ) -> Tuple[torch.Tensor, List[torch.Tensor]]:
+        memory = self.linear_in(memory)
+        if self.causal_lm:
+            inputs_embeds = self.decoder_word_embeddings(tgt[:, -1:])  # (batch, 1, hidden_size)
+            model_inputs = {
+                "inputs_embeds": inputs_embeds,
+                "encoder_hidden_states": memory,
+                "encoder_attention_mask": memory_mask,
+                "past_key_values": cache,
+                "return_dict": True,
+                "use_cache": True
+            }
+        else:
+            model_inputs = {
+                "input_ids": tgt,
+                "encoder_hidden_states": memory,
+                "encoder_attention_mask": memory_mask,
+                "past_key_values": cache,
+                "return_dict": True,
+            }
+        
+        outputs = self.decoder(**model_inputs)
+
+        new_cache = outputs.past_key_values
+
+        last_hidden_state = outputs.last_hidden_state 
+
+        logits = self.lm_head(last_hidden_state) 
+
+        next_token_logits = logits[:, -1, :]  
+        log_probs = F.log_softmax(next_token_logits, dim=-1)
+        
+        return log_probs, new_cache
+
     def score(self, ys, state, x, speech=None):
-        model_kwargs = {
-            "encoder_outputs": ModelOutput(
-                last_hidden_state=self.linear_in(x).unsqueeze(0)
-            ),
-        }
+        # model_kwargs = {
+        #     "encoder_outputs": ModelOutput(
+        #         last_hidden_state=self.linear_in(x).unsqueeze(0)
+        #     ),
+        # }
         # TODO(brian): caching
-        model_inputs = self.hf_generate.prepare_inputs_for_generation(
-            ys.unsqueeze(0), **model_kwargs
+        # model_inputs = self.hf_generate.prepare_inputs_for_generation(
+        #     ys.unsqueeze(0), **model_kwargs
+        # )
+        # outputs = self.hf_generate(
+        #     **model_inputs,
+        #     return_dict=True,
+        #     output_attentions=False,
+        #     output_hidden_states=False
+        # )
+        # next_token_logits = outputs.logits[:, -1, :]
+        # next_token_scores = torch.nn.functional.log_softmax(
+        #     next_token_logits, dim=-1
+        # )  # (batch_size * num_beams, vocab_size)
+        # return next_token_scores.squeeze(0), None
+
+        if state is None:
+            decoder_state = None
+        else:
+            decoder_state = state
+        
+        # サブシーケントマスクを作成
+        from espnet.nets.pytorch_backend.transformer.mask import subsequent_mask
+        ys_mask = subsequent_mask(ys.size(0), device=ys.device).unsqueeze(0)  # (1, ylen, ylen)
+
+        # `forward_one_step`を呼び出し
+        log_probs, new_cache = self.forward_one_step(
+            ys.unsqueeze(0),
+            ys_mask,
+            x.unsqueeze(0),
+            memory_mask=None,
+            cache=decoder_state,
         )
-        outputs = self.hf_generate(
-            **model_inputs,
-            return_dict=True,
-            output_attentions=False,
-            output_hidden_states=False
-        )
-        next_token_logits = outputs.logits[:, -1, :]
-        next_token_scores = torch.nn.functional.log_softmax(
-            next_token_logits, dim=-1
-        )  # (batch_size * num_beams, vocab_size)
-        return next_token_scores.squeeze(0), None
+
+        log_probs = log_probs.squeeze(0)
+
+        return log_probs, new_cache
 
     def batch_score(
         self,
@@ -265,23 +342,64 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         speech: torch.Tensor = None,
     ) -> Tuple[torch.Tensor, List[Any]]:
         # import pdb;pdb.set_trace()
-        model_kwargs = {
-            "encoder_outputs": ModelOutput(last_hidden_state=self.linear_in(xs)),
-        }
-        model_inputs = self.hf_generate.prepare_inputs_for_generation(
-            ys, **model_kwargs
+        # model_kwargs = {
+        #     "encoder_outputs": ModelOutput(last_hidden_state=self.linear_in(xs)),
+        # }
+        # model_inputs = self.hf_generate.prepare_inputs_for_generation(
+        #     ys, **model_kwargs
+        # )
+        # outputs = self.hf_generate(
+        #     **model_inputs,
+        #     return_dict=True,
+        #     output_attentions=False,
+        #     output_hidden_states=False
+        # )
+        # next_token_logits = outputs.logits[:, -1, :]
+        # next_token_scores = torch.nn.functional.log_softmax(
+        #     next_token_logits, dim=-1
+        # )  # (batch_size * num_beams, vocab_size)
+        # return next_token_scores, None
+
+        n_batch = len(ys)
+        if states is None or len(states) == 0 or states[0] is None:
+            batch_state = None
+        else:
+            num_layers = len(states[0])
+            batch_state = []
+            for layer_idx in range(num_layers):
+                layer_past = []
+                for b in range(n_batch):
+                    layer_past.append(states[b][layer_idx])
+                stacked_layer_past = tuple(
+                    torch.stack([layer_past[b][i] for b in range(n_batch)], dim=0)
+                    for i in range(len(layer_past[0]))
+                )
+                batch_state.append(stacked_layer_past)
+            batch_state = tuple(batch_state)
+
+        from espnet.nets.pytorch_backend.transformer.mask import subsequent_mask
+        ys_mask = subsequent_mask(ys.size(1), device=ys.device).unsqueeze(0) 
+
+        memory_mask = None  
+
+        log_probs, new_cache = self.forward_one_step(
+            ys,
+            ys_mask,
+            xs,
+            memory_mask=memory_mask,
+            cache=batch_state, 
         )
-        outputs = self.hf_generate(
-            **model_inputs,
-            return_dict=True,
-            output_attentions=False,
-            output_hidden_states=False
-        )
-        next_token_logits = outputs.logits[:, -1, :]
-        next_token_scores = torch.nn.functional.log_softmax(
-            next_token_logits, dim=-1
-        )  # (batch_size * num_beams, vocab_size)
-        return next_token_scores, None
+
+        state_list = []
+        num_layers = len(new_cache)
+        for b in range(n_batch):
+            state_b = []
+            for layer_idx in range(num_layers):
+                layer_past = tuple(past_state[b] for past_state in new_cache[layer_idx])
+                state_b.append(layer_past)
+            state_list.append(state_b)
+        return log_probs, state_list
+
 
 
 def get_hugging_face_model_network(model):
