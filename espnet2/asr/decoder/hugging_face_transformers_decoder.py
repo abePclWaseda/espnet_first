@@ -16,7 +16,7 @@ from espnet2.asr.decoder.abs_decoder import AbsDecoder
 from espnet.nets.pytorch_backend.nets_utils import make_pad_mask
 
 try:
-    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer
+    from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, AutoConfig
     from transformers.file_utils import ModelOutput
 
     is_transformers_available = True
@@ -87,12 +87,22 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
                 tokenizer.encode(postfix, return_tensors="pt").long()
             ).detach()
         else:
-            model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path)
+            config = AutoConfig.from_pretrained(model_name_or_path)
+            config.add_cross_attention = True
 
-            if hasattr(model, "model"):
-                self.decoder = model.model.decoder
+            # model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, config = config)
+            model = AutoModelForCausalLM.from_pretrained(model_name_or_path, config = config)
+
+            # if hasattr(model, "model"):
+            #     self.decoder = model.model.decoder
+            # else:
+            #     self.decoder = model.decoder
+            self.decoder = get_hugging_face_model_network(model)
+
+            if hasattr(self.decoder, "wte"):
+                self.decoder_word_embeddings = self.decoder.wte
             else:
-                self.decoder = model.decoder
+                raise Exception("Can not find the word embeddings attribute")
 
         model.resize_token_embeddings(vocab_size)
 
