@@ -206,7 +206,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         enc_out_list = []
 
         for i in range(len(hlens)):
-            enc_out_element = [
+            enc_out_element = [ # ここが原因っぽい
                 self.prefix.to(enc_out.device),
                 enc_out[i : i + 1, : hlens[i], :],
                 self.postfix.to(enc_out.device),
