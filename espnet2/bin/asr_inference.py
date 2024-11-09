@@ -783,6 +783,7 @@ def inference(
         model_tag=model_tag,
         **speech2text_kwargs,
     )
+    # import pdb;pdb.set_trace()
 
     # 3. Build data-iterator
     loader = ASRTask.build_streaming_iterator(
