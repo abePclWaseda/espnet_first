@@ -42,10 +42,10 @@ speech2text_for_lm = Speech2Text.from_pretrained(
     ngram_weight=0.9,
     penalty=0.0,
     nbest=1,
-    partial_ar=False,
-    threshold_probability=0.99,
-    max_seq_len=5,
-    max_mask_parallel=-1
+    # partial_ar=False,
+    # threshold_probability=0.99,
+    # max_seq_len=5,
+    # max_mask_parallel=-1 デコーダを作成したESPnet(kiso-qnap/abe)のバージョンが古く, これらの引数を受け付けない.
 )
 
 asr_model = speech2text.asr_model
