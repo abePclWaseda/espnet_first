@@ -30,9 +30,6 @@ speech2text_for_lm = Speech2Text.from_pretrained(
     transducer_conf=None,
     lm_train_config="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/config.yaml",
     lm_file="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/valid.loss.ave.pth",
-    beam_size=10,
-    ctc_weight=0.3,
-    lm_weight=0.5,
     ngram_file=None,
     token_type=None,
     bpemodel=None,
@@ -50,3 +47,8 @@ speech2text_for_lm = Speech2Text.from_pretrained(
     max_seq_len=5,
     max_mask_parallel=-1
 )
+
+asr_model = speech2text.asr_model
+lm = speech2text_for_lm.beam_search.scorers['lm']
+
+print(asr_model.decoder.decoders[0].self_attn.linear_q.weight[0, 0:10])
