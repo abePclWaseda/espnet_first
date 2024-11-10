@@ -51,8 +51,8 @@ speech2text_for_lm = Speech2Text.from_pretrained(
 asr_model = speech2text.asr_model
 lm = speech2text_for_lm.beam_search.scorers['lm']
 # import pdb;pdb.set_trace()
-print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
-print(lm.decoder.h[0].attn.c_attn.weight[0, 0:10])
+# print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
+# print(lm.decoder.h[0].attn.c_attn.weight[0, 0:10])
 
 import soundfile
 speech, rate = soundfile.read("/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/142845.oga")
@@ -86,7 +86,7 @@ with torch.no_grad():
         
         asr_attn.load_state_dict(asr_attn_params)
 
-print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
+# print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
 
 nbests = speech2text(speech)
 
