@@ -52,3 +52,4 @@ asr_model = speech2text.asr_model
 lm = speech2text_for_lm.beam_search.scorers['lm']
 # import pdb;pdb.set_trace()
 print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
+print(lm.decoder.h[0].attn.c_attn.weight[0, 0:10])
