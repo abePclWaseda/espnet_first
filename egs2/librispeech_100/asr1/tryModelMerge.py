@@ -54,6 +54,12 @@ lm = speech2text_for_lm.beam_search.scorers['lm']
 print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
 print(lm.decoder.h[0].attn.c_attn.weight[0, 0:10])
 
+import soundfile
+speech, rate = soundfile.read("/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/e_thankyou_02.wav")
+nbests = speech2text(speech)
+
+print([x[0] for x in nbests])
+
 import torch
 num_layers = len(asr_model.decoder.decoder.h)
 assert num_layers == len(lm.decoder.h), "レイヤー数が一致しません。"
@@ -81,3 +87,7 @@ with torch.no_grad():
         asr_attn.load_state_dict(asr_attn_params)
 
 print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
+
+nbests = speech2text(speech)
+
+print([x[0] for x in nbests])
