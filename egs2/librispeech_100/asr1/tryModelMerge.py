@@ -38,7 +38,7 @@ speech2text_for_lm = Speech2Text.from_pretrained(
     minlenratio=0.0,
     beam_size=20,
     ctc_weight=0.3,
-    lm_weight=0.0,
+    lm_weight=0.1,
     ngram_weight=0.9,
     penalty=0.0,
     nbest=1,
@@ -50,5 +50,5 @@ speech2text_for_lm = Speech2Text.from_pretrained(
 
 asr_model = speech2text.asr_model
 lm = speech2text_for_lm.beam_search.scorers['lm']
-
-print(asr_model.decoder.decoders[0].self_attn.linear_q.weight[0, 0:10])
+# import pdb;pdb.set_trace()
+print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
