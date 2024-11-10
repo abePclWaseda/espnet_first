@@ -55,7 +55,7 @@ print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
 print(lm.decoder.h[0].attn.c_attn.weight[0, 0:10])
 
 import soundfile
-speech, rate = soundfile.read("/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/e_thankyou_02.wav")
+speech, rate = soundfile.read("/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/142845.oga")
 nbests = speech2text(speech)
 
 print([x[0] for x in nbests])
