@@ -53,3 +53,31 @@ lm = speech2text_for_lm.beam_search.scorers['lm']
 # import pdb;pdb.set_trace()
 print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
 print(lm.decoder.h[0].attn.c_attn.weight[0, 0:10])
+
+import torch
+num_layers = len(asr_model.decoder.decoder.h)
+assert num_layers == len(lm.decoder.h), "レイヤー数が一致しません。"
+
+with torch.no_grad():
+    for i in range(num_layers):
+        asr_layer = asr_model.decoder.decoder.h[i]
+        lm_layer = lm.decoder.h[i]
+        
+        asr_attn = asr_layer.attn
+        lm_attn = lm_layer.attn
+        
+        asr_attn_params = asr_attn.state_dict()
+        lm_attn_params = lm_attn.state_dict()
+        
+        for name in asr_attn_params:
+            if name in lm_attn_params:
+                asr_param = asr_attn_params[name]
+                lm_param = lm_attn_params[name].to(asr_param.device)
+                averaged_param = (asr_param + lm_param) / 2
+                asr_attn_params[name] = averaged_param
+            else:
+                print(f"警告: {name} が lm_attn_params に存在しません。")
+        
+        asr_attn.load_state_dict(asr_attn_params)
+
+print(asr_model.decoder.decoder.h[0].attn.c_attn.weight[0, 0:10])
