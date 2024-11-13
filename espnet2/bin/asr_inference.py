@@ -168,19 +168,32 @@ class Speech2Text:
         )
 
         # 2. Build Language model
-        if lm_train_config is not None:
-            lm, lm_train_args = LMTask.build_model_from_file(
-                lm_train_config, lm_file, device
-            )
-
-            if quantize_lm:
-                logging.info("Use quantized lm for decoding.")
-
-                lm = torch.quantization.quantize_dynamic(
-                    lm, qconfig_spec=qconfig_spec, dtype=quantize_dtype
+        from transformers import GPT2LMHeadModel, GPT2Tokenizer
+        if lm_file == "gpt2" or lm_file == "openai-gpt2":
+            # GPT-2モデルとトークナイザーをロード
+            tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+            gpt2_model = GPT2LMHeadModel.from_pretrained('gpt2')
+            gpt2_model.to(device).eval()
+            
+            # scorersにGPT-2モデルを設定
+            scorers["lm"] = gpt2_model
+            self.tokenizer = tokenizer
+            self.converter = HuggingFaceTokenIDConverter(model_name_or_path='gpt2')
+        else:
+            # 既存のLMロード処理
+            if lm_train_config is not None:
+                lm, lm_train_args = LMTask.build_model_from_file(
+                    lm_train_config, lm_file, device
                 )
 
-            scorers["lm"] = lm.lm
+                if quantize_lm:
+                    logging.info("Use quantized lm for decoding.")
+
+                    lm = torch.quantization.quantize_dynamic(
+                        lm, qconfig_spec=qconfig_spec, dtype=quantize_dtype
+                    )
+
+                scorers["lm"] = lm.lm
 
         # 3. Build ngram model
         if ngram_file is not None:
