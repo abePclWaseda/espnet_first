@@ -11,8 +11,8 @@ grad_clip: 5.0
 batch_type: numel
 # batch_bins: 500000000
 # accum_grad: 2
-batch_bins: 15625000
-accum_grad: 64
+batch_bins: 125000000
+accum_grad: 8
 max_epoch: 2
 
 optim: adam
