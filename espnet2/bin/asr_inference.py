@@ -168,32 +168,20 @@ class Speech2Text:
         )
 
         # 2. Build Language model
-        from transformers import GPT2LMHeadModel, GPT2Tokenizer
-        if lm_file == "gpt2" or lm_file == "openai-gpt2":
-            # GPT-2モデルとトークナイザーをロード
-            tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-            gpt2_model = GPT2LMHeadModel.from_pretrained('gpt2')
-            gpt2_model.to(device).eval()
-            
-            # scorersにGPT-2モデルを設定
-            scorers["lm"] = gpt2_model
-            self.tokenizer = tokenizer
-            self.converter = HuggingFaceTokenIDConverter(model_name_or_path='gpt2')
-        else:
-            # 既存のLMロード処理
-            if lm_train_config is not None:
-                lm, lm_train_args = LMTask.build_model_from_file(
-                    lm_train_config, lm_file, device
+        if lm_train_config is not None:
+            import pdb;pdb.set_trace()
+            lm, lm_train_args = LMTask.build_model_from_file(
+                lm_train_config, lm_file, device
+            )
+
+            if quantize_lm:
+                logging.info("Use quantized lm for decoding.")
+
+                lm = torch.quantization.quantize_dynamic(
+                    lm, qconfig_spec=qconfig_spec, dtype=quantize_dtype
                 )
 
-                if quantize_lm:
-                    logging.info("Use quantized lm for decoding.")
-
-                    lm = torch.quantization.quantize_dynamic(
-                        lm, qconfig_spec=qconfig_spec, dtype=quantize_dtype
-                    )
-
-                scorers["lm"] = lm.lm
+            scorers["lm"] = lm.lm
 
         # 3. Build ngram model
         if ngram_file is not None:
@@ -799,11 +787,12 @@ def inference(
     # import pdb;pdb.set_trace()
 
     speech2text_for_lm = Speech2Text.from_pretrained(
-        asr_train_config="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/config.yaml",
-        asr_model_file="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/valid.acc.ave.pth",
+        asr_train_config="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/config.yaml",
+        asr_model_file="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/valid.acc.ave.pth",
         transducer_conf=None,
-        lm_train_config="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/config.yaml",
-        lm_file="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/valid.loss.ave.pth",
+        lm_train_config="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/config.yaml",
+        # lm_file="gpt2",
+        lm_file="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/valid.loss.ave.pth",
         ngram_file=None,
         token_type=None,
         bpemodel=None,

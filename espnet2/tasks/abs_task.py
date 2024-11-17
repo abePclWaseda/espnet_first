@@ -2105,10 +2105,16 @@ class AbsTask(ABC):
                 #   in PyTorch<=1.4
                 device = f"cuda:{torch.cuda.current_device()}"
             try:
-                model.load_state_dict(
-                    torch.load(model_file, map_location=device),
-                    strict=not use_adapter,
-                )
+                if model_file == "gpt2":
+                    from espnet2.lm.huggingface_pretrained_opt_lm import HuggingfaceOPTModel
+                    vocab_size = 50257
+                    model = HuggingfaceOPTModel(vocab_size=vocab_size, opt_name="openai-community/gpt2", remove_head= False, isGPT2= True)
+                    model.to(device)
+                else:
+                    model.load_state_dict(
+                        torch.load(model_file, map_location=device),
+                        strict=not use_adapter,
+                    )
             except RuntimeError:
                 # Note(simpleoier): the following part is to be compatible with
                 #   pretrained model using earlier versions before `0a625088`
