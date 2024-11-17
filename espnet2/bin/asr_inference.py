@@ -786,11 +786,11 @@ def inference(
     # import pdb;pdb.set_trace()
 
     speech2text_for_lm = Speech2Text.from_pretrained(
-        asr_train_config="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/config.yaml",
-        asr_model_file="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/valid.acc.ave.pth",
+        asr_train_config="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/config.yaml",
+        asr_model_file="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/valid.acc.ave.pth",
         transducer_conf=None,
-        lm_train_config="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/config.yaml",
-        lm_file="/mnt/kiso-qnap2/yuabe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/valid.loss.ave.pth",
+        lm_train_config="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/config.yaml",
+        lm_file="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/valid.loss.ave.pth",
         ngram_file=None,
         token_type=None,
         bpemodel=None,
