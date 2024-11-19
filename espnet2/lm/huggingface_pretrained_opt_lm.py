@@ -75,6 +75,7 @@ class HuggingfaceOPTModel(AbsLM):
                     pre_trained_lm_head.size(1), pre_trained_lm_head.size(0), bias=False
                 )
                 self.lm_head.weight = nn.Parameter(pre_trained_lm_head)
+            # import pdb;pdb.set_trace()
 
     def _target_mask(self, ys_in_pad):
         ys_mask = ys_in_pad != 0
@@ -89,6 +90,7 @@ class HuggingfaceOPTModel(AbsLM):
             hidden (torch.Tensor): Target ids. (batch, len)
 
         """
+        # import pdb;pdb.set_trace() 事前学習済みパラメータがロードできているかの確認はここで行う.
         pad_mask = input != 0
         y = self.decoder(
             input,
