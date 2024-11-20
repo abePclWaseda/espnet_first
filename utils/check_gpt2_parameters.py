@@ -13,15 +13,15 @@ state_dict = torch.load(model_file, map_location="cpu")
 # cross_attention_keys = [k for k in state_dict.keys() if "crossattention" in k]
 # print(f"クロスアテンション層のパラメータ数: {len(cross_attention_keys)}")
 # print(f"クロスアテンション層のキー: {cross_attention_keys}")
-# print(state_dict.keys())
+print(len(state_dict.keys()))
 
 # 必要に応じて特定のパラメータ値を表示（最初の10個の値を表示する例）
 # if cross_attention_keys:
 #     for key in cross_attention_keys:
 #         print(f"{key}: {state_dict[key].flatten()[:10]}") 
 
-specific_key = "h.0.attn.c_attn.weight"
-if specific_key in state_dict.keys():
-    print(f"{specific_key}: {state_dict[specific_key].flatten()[0:10]}")
-else:
-    print(f"{specific_key} はキーに含まれていません。")
+# specific_key = "h.0.attn.c_attn.weight"
+# if specific_key in state_dict.keys():
+#     print(f"{specific_key}: {state_dict[specific_key].flatten()[0:10]}")
+# else:
+#     print(f"{specific_key} はキーに含まれていません。")
