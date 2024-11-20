@@ -832,7 +832,7 @@ def inference(
                 if name in lm_attn_params:
                     asr_param = asr_attn_params[name]
                     lm_param = lm_attn_params[name].to(asr_param.device)
-                    averaged_param = (asr_param + lm_param) / 2
+                    averaged_param = asr_param * 0.9 + lm_param * 0.1
                     asr_attn_params[name] = averaged_param
                 else:
                     print(f"警告: {name} が lm_attn_params に存在しません。")
