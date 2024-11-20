@@ -24,7 +24,7 @@ lm_config=../lm1/conf/train_transformer_gpt2.yaml
     --speed_perturb_factors "0.9 1.0 1.1" \
     --audio_format "flac.ark" \
     --feats_type raw \
-    --lm_config "${lm_config}" \
+    --use_lm false \
     --asr_config "${asr_config}" \
     --inference_config "${inference_config}" \
     --train_set "${train_set}" \
