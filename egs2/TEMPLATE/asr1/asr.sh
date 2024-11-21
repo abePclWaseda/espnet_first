@@ -1161,17 +1161,17 @@ if [ ${stage} -le 8 ] && [ ${stop_stage} -ge 8 ] && ! [[ " ${skip_stages} " =~ [
     log "Stage 8: Calc perplexity: ${lm_test_text}"
     _opts=
     # TODO(kamo): Parallelize?
-    log "Perplexity calculation started... log: '${lm_exp}/perplexity_test/lm_calc_perplexity.log'"
+    log "Perplexity calculation started... log: '${lm_exp}/perplexity_test_originalGPT2/lm_calc_perplexity.log'"
     # shellcheck disable=SC2086
-    ${cuda_cmd} --gpu "${ngpu}" "${lm_exp}"/perplexity_test/lm_calc_perplexity.log \
+    ${cuda_cmd} --gpu "${ngpu}" "${lm_exp}"/perplexity_test_originalGPT2/lm_calc_perplexity.log \
         ${python} -m espnet2.bin.lm_calc_perplexity \
             --ngpu "${ngpu}" \
             --data_path_and_name_and_type "${lm_test_text},text,text" \
             --train_config "${lm_exp}"/config.yaml \
-            --model_file "${lm_exp}/${inference_lm}" \
-            --output_dir "${lm_exp}/perplexity_test" \
+            --model_file "${lm_exp}/gpt2_pretrained.pth" \
+            --output_dir "${lm_exp}/perplexity_test_originalGPT2" \
             ${_opts}
-    log "PPL: ${lm_test_text}: $(cat ${lm_exp}/perplexity_test/ppl)"
+    log "PPL: ${lm_test_text}: $(cat ${lm_exp}/perplexity_test_originalGPT2/ppl)"
 
 fi
 

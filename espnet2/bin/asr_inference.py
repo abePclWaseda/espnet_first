@@ -169,6 +169,7 @@ class Speech2Text:
 
         # 2. Build Language model
         if lm_train_config is not None:
+            # import pdb;pdb.set_trace()
             lm, lm_train_args = LMTask.build_model_from_file(
                 lm_train_config, lm_file, device
             )

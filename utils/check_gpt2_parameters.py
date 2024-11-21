@@ -1,13 +1,16 @@
+#  /mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/gpt2_pretrained.pth に入っているgpt2のパラメータを確認する.
+#  gpt2で言語モデルを初期化できてない可能性あり,,,.
+#  deepcopyメソッドが機能してるかわからない. (optだとこれでできていたが.)
 import torch
 
 # モデルファイルのパス
-model_file = "/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/valid.loss.ave.pth"
+model_file = "/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/gpt2_pretrained.pth"
 
 # state_dictのロード
 state_dict = torch.load(model_file, map_location="cpu")
 
 # クロスアテンション層のキーが存在するか確認
-cross_attention_keys = [k for k in state_dict.keys() if "crossattention" in k]
+# cross_attention_keys = [k for k in state_dict.keys() if "crossattention" in k]
 # print(f"クロスアテンション層のパラメータ数: {len(cross_attention_keys)}")
 # print(f"クロスアテンション層のキー: {cross_attention_keys}")
 print(len(state_dict.keys()))
@@ -17,7 +20,7 @@ print(len(state_dict.keys()))
 #     for key in cross_attention_keys:
 #         print(f"{key}: {state_dict[key].flatten()[:10]}") 
 
-# specific_key = "decoder.decoder.h.0.attn.c_attn.weight"
+# specific_key = "h.0.attn.c_attn.weight"
 # if specific_key in state_dict.keys():
 #     print(f"{specific_key}: {state_dict[specific_key].flatten()[0:10]}")
 # else:
