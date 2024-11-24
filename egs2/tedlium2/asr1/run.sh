@@ -9,7 +9,8 @@ train_set="train"
 valid_set="dev"
 test_sets="test dev"
 
-asr_config=conf/train_asr_e_branchformer.yaml
+# asr_config=conf/train_asr_e_branchformer.yaml
+asr_config="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/conf/tuning/train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic.yaml"
 inference_config=conf/decode_asr.yaml
 
 ./asr.sh \
@@ -20,7 +21,8 @@ inference_config=conf/decode_asr.yaml
     --inference_nj 2 \
     --feats_type raw \
     --audio_format "flac.ark" \
-    --token_type bpe \
+    --hugging_face_model_name_or_path "openai-community/gpt2" \
+    --token_type "hugging_face" \
     --nbpe 500 \
     --use_lm false \
     --asr_config "${asr_config}" \

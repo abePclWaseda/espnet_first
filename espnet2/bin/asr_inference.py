@@ -746,8 +746,8 @@ def inference(
 
     # 2. Build speech2text
     speech2text_kwargs = dict(
-        asr_train_config=asr_train_config,
-        asr_model_file=asr_model_file,
+        asr_train_config="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/config.yaml",
+        asr_model_file="/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/valid.acc.ave.pth",
         transducer_conf=transducer_conf,
         lm_train_config=lm_train_config,
         lm_file=lm_file,
@@ -831,7 +831,7 @@ def inference(
                 if name in lm_attn_params:
                     asr_param = asr_attn_params[name]
                     lm_param = lm_attn_params[name].to(asr_param.device)
-                    averaged_param = asr_param * 0.95 + lm_param * 0.05
+                    averaged_param = asr_param * 0.9 + lm_param * 0.1
                     asr_attn_params[name] = averaged_param
                 else:
                     print(f"警告: {name} が lm_attn_params に存在しません。")
