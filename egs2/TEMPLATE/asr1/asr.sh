@@ -1251,12 +1251,12 @@ if [ ${stage} -le 10 ] && [ ${stop_stage} -ge 10 ] && ! [[ " ${skip_stages} " =~
     _opts+="--valid_data_path_and_name_and_type ${_asr_valid_dir}/${_scp},speech,${_type} "
     # shellcheck disable=SC2068
     for i in ${!ref_text_files[@]}; do
-        _opts+="--train_data_path_and_name_and_type ${_asr_train_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text "
-        _opts+="--valid_data_path_and_name_and_type ${_asr_valid_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text "
+        _opts+="--train_data_path_and_name_and_type ${_asr_train_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text_lower_text.txt "
+        _opts+="--valid_data_path_and_name_and_type ${_asr_valid_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text_lower_text.txt "
     done
     if ${use_prompt}; then
-        _opts+="--train_data_path_and_name_and_type ${_asr_train_dir}/prompt,prompt,text "
-        _opts+="--valid_data_path_and_name_and_type ${_asr_valid_dir}/prompt,prompt,text "
+        _opts+="--train_data_path_and_name_and_type ${_asr_train_dir}/prompt,prompt,text_lower_text.txt "
+        _opts+="--valid_data_path_and_name_and_type ${_asr_valid_dir}/prompt,prompt,text_lower_text.txt "
         _opts+="--use_lang_prompt ${use_lang_prompt} "
         _opts+="--use_nlp_prompt ${use_nlp_prompt} "
     fi
@@ -1353,7 +1353,7 @@ if [ ${stage} -le 11 ] && [ ${stop_stage} -ge 11 ] && ! [[ " ${skip_stages} " =~
             ${python} -m espnet2.bin.split_scps \
               --scps \
                   "${_asr_train_dir}/${_scp}" \
-                  "${_asr_train_dir}/text" \
+                  "${_asr_train_dir}/text_lower_text.txt" \
                   "${asr_stats_dir}/train/speech_shape" \
                   "${asr_stats_dir}/train/text_shape.${token_type}" \
               --num_splits "${num_splits_asr}" \
@@ -1368,7 +1368,7 @@ if [ ${stage} -le 11 ] && [ ${stop_stage} -ge 11 ] && ! [[ " ${skip_stages} " =~
         # shellcheck disable=SC2068
         for i in ${!ref_text_names[@]}; do
             _opts+="--fold_length ${asr_text_fold_length} "
-            _opts+="--train_data_path_and_name_and_type ${_split_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text "
+            _opts+="--train_data_path_and_name_and_type ${_split_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text_lower_text.txt "
             _opts+="--train_shape_file ${_split_dir}/${ref_text_names[$i]}_shape.${token_type} "
         done
         _opts+="--multiple_iterator true "
@@ -1387,20 +1387,20 @@ if [ ${stage} -le 11 ] && [ ${stop_stage} -ge 11 ] && ! [[ " ${skip_stages} " =~
         # shellcheck disable=SC2068
         for i in ${!ref_text_names[@]}; do
             _opts+="--fold_length ${asr_text_fold_length} "
-            _opts+="--train_data_path_and_name_and_type ${_asr_train_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text "
+            _opts+="--train_data_path_and_name_and_type ${_asr_train_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text_lower_text.txt "
             _opts+="--train_shape_file ${asr_stats_dir}/train/${ref_text_names[$i]}_shape.${token_type} "
         done
     fi
 
     # shellcheck disable=SC2068
     for i in ${!ref_text_names[@]}; do
-        _opts+="--valid_data_path_and_name_and_type ${_asr_valid_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text "
+        _opts+="--valid_data_path_and_name_and_type ${_asr_valid_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text_lower_text.txt "
         _opts+="--valid_shape_file ${asr_stats_dir}/valid/${ref_text_names[$i]}_shape.${token_type} "
     done
     if ${use_prompt}; then
-        _opts+="--train_data_path_and_name_and_type ${_asr_train_dir}/prompt,prompt,text "
+        _opts+="--train_data_path_and_name_and_type ${_asr_train_dir}/prompt,prompt,text_lower_text.txt "
         _opts+="--train_shape_file ${asr_stats_dir}/train/prompt_shape "
-        _opts+="--valid_data_path_and_name_and_type ${_asr_valid_dir}/prompt,prompt,text "
+        _opts+="--valid_data_path_and_name_and_type ${_asr_valid_dir}/prompt,prompt,text_lower_text.txt "
         _opts+="--valid_shape_file ${asr_stats_dir}/valid/prompt_shape "
         _opts+="--use_lang_prompt ${use_lang_prompt} "
         _opts+="--use_nlp_prompt ${use_nlp_prompt} "
