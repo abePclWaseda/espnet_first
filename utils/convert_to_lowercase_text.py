@@ -1,5 +1,5 @@
-input_file = '/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/dump/raw/train_clean_100_sp/text'
-output_file = '/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/dump/raw/train_clean_100_sp/text_lower_text.txt'
+input_file = '/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/dump/raw/dev/text'
+output_file = '/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/dump/raw/dev/text_lower_text.txt'
 
 with open(input_file, 'r', encoding='utf-8') as f_in, open(output_file, 'w', encoding='utf-8') as f_out:
     for line in f_in:
