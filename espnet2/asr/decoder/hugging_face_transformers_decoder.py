@@ -253,9 +253,8 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         memory = self.linear_in(memory)
         # import pdb;pdb.set_trace()
 
-        inputs_embeds = self.decoder_word_embeddings(tgt[:, -1:])  
         model_inputs = {
-            "inputs_embeds": inputs_embeds,
+            "input_ids": tgt[:, -1:],
             "encoder_hidden_states": memory,
             "encoder_attention_mask": memory_mask,
             "past_key_values": cache,
