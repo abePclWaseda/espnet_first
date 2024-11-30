@@ -99,11 +99,6 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
             #     self.decoder = model.decoder
             self.decoder = get_hugging_face_model_network(model)
 
-            if hasattr(self.decoder, "wte"):
-                self.decoder_word_embeddings = self.decoder.wte
-            else:
-                raise Exception("Can not find the word embeddings attribute")
-
         model.resize_token_embeddings(vocab_size)
 
         self.lm_head = get_hugging_face_model_lm_head(model)
@@ -258,9 +253,8 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         memory = self.linear_in(memory)
         # import pdb;pdb.set_trace()
 
-        inputs_embeds = self.decoder_word_embeddings(tgt[:, -1:])  
         model_inputs = {
-            "inputs_embeds": inputs_embeds,
+            "input_ids": tgt[:, -1:],
             "encoder_hidden_states": memory,
             "encoder_attention_mask": memory_mask,
             "past_key_values": cache,
