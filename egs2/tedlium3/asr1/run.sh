@@ -14,17 +14,20 @@ data_type=legacy
 
 asr_config=conf/train.yaml
 inference_config=conf/decode.yaml
-lm_config=conf/train_lm.yaml
+lm_config=conf/tuning/train_transformer_gpt2.yaml
 
 ./asr.sh \
     --lang en \
     --nj 8 \
-    --ngpu 4 \
+    --ngpu 1 \
     --gpu_inference true \
     --inference_nj 2 \
     --feats_type raw \
     --audio_format "flac.ark" \
-    --token_type bpe \
+    --hugging_face_model_name_or_path "openai-community/gpt2" \
+    --token_type "hugging_face" \
+    --stage 8 \
+    --stop_stage 8 \
     --nbpe 500 \
     --asr_config "${asr_config}" \
     --inference_config "${inference_config}" \
