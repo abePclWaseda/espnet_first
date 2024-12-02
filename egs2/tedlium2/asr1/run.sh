@@ -17,6 +17,8 @@ inference_config=conf/decode_asr.yaml
     --lang en \
     --nj 8 \
     --ngpu 2 \
+    --stage 12 \
+    --stop_stage 13 \
     --gpu_inference true \
     --inference_nj 2 \
     --feats_type raw \
