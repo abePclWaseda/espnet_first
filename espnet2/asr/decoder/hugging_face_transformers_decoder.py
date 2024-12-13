@@ -189,12 +189,35 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         return x, ys_in_lens
 
     def reload_pretrained_parameters(self):
-        self.decoder.load_state_dict(self.decoder_pretrained_params)
+        ckpt_path = "/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/valid.loss.ave.pth"
+        ckpt = torch.load(ckpt_path, map_location="cpu")
 
-        if self.lm_head_pretrained_params is not None:
-            self.lm_head.load_state_dict(self.lm_head_pretrained_params)
+        # チェックポイント中のキーから decoder 用と lm_head 用を分ける
+        decoder_state_dict = {}
+        lm_head_state_dict = {}
 
-        logging.info("Pretrained Transformers model parameters reloaded!")
+        for k, v in ckpt.items():
+            if k.startswith('lm.decoder.'):
+                # 'lm.decoder.' を取り除く
+                new_k = k.replace('lm.decoder.', '')
+                decoder_state_dict[new_k] = v
+            elif k.startswith('lm.lm_head.'):
+                # 'lm.lm_head.' を取り除く
+                new_k = k.replace('lm.lm_head.', '')
+                lm_head_state_dict[new_k] = v
+
+        # ロード (strict=Falseは必要に応じて変更)
+        self.decoder.load_state_dict(decoder_state_dict, strict=False)
+        if len(lm_head_state_dict) > 0:
+            self.lm_head.load_state_dict(lm_head_state_dict, strict=False)
+
+        logging.info("Parameters reloaded from custom checkpoint for openai-community/gpt2!")
+        # self.decoder.load_state_dict(self.decoder_pretrained_params)
+
+        # if self.lm_head_pretrained_params is not None:
+        #     self.lm_head.load_state_dict(self.lm_head_pretrained_params)
+
+        # logging.info("Pretrained Transformers model parameters reloaded!")
 
     def add_prefix_postfix(self, enc_out, hlens, ys_in_pad, ys_in_lens):
         args = {}
