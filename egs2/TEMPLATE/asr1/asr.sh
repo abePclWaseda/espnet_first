@@ -1368,7 +1368,7 @@ if [ ${stage} -le 11 ] && [ ${stop_stage} -ge 11 ] && ! [[ " ${skip_stages} " =~
         # shellcheck disable=SC2068
         for i in ${!ref_text_names[@]}; do
             _opts+="--fold_length ${asr_text_fold_length} "
-            _opts+="--train_data_path_and_name_and_type ${_split_dir}/${ref_text_files[$i]},${ref_text_names[$i]},text_lower_text.txt "
+            _opts+="--train_data_path_and_name_and_type ${_split_dir}/text_lower_text.txt,${ref_text_names[$i]},text_lower_text.txt "
             _opts+="--train_shape_file ${_split_dir}/${ref_text_names[$i]}_shape.${token_type} "
         done
         _opts+="--multiple_iterator true "
