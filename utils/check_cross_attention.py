@@ -2,7 +2,7 @@ import torch
 
 # モデルファイルのパス
 model_file = "egs2/librispeech_100/asr1/exp/asr_train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic_raw_en_hugging_face_openai-community-gpt2_sp/valid.acc.ave.pth"
-
+# model_file = "/mnt/kiso-qnap/abe/b4/espnet/egs2/librispeech_100/asr1/exp/lm_train_transformer_gpt2_en_hugging_face/gpt2_pretrained.pth"
 # state_dictのロード
 state_dict = torch.load(model_file, map_location="cpu")
 
@@ -18,6 +18,7 @@ cross_attention_keys = [k for k in state_dict.keys() if "crossattention" in k]
 #         print(f"{key}: {state_dict[key].flatten()[:10]}") 
 
 specific_key = "decoder.decoder.h.0.attn.c_attn.weight"
+# specific_key = "lm.decoder.h.0.attn.c_attn.weight"
 if specific_key in state_dict.keys():
     print(f"{specific_key}: {state_dict[specific_key].flatten()[0:10]}")
 else:
