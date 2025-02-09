@@ -11,6 +11,7 @@ test_sets="test_clean test_other dev_clean dev_other"
 
 asr_config=conf/tuning/train_asr_conformer_lr2e-3_warmup15k_amp_nondeterministic.yaml
 inference_config=conf/decode_asr.yaml
+lm_config=../lm1/conf/train_transformer_gpt2.yaml
 
 ./asr.sh \
     --lang en \
@@ -23,7 +24,7 @@ inference_config=conf/decode_asr.yaml
     --speed_perturb_factors "0.9 1.0 1.1" \
     --audio_format "flac.ark" \
     --feats_type raw \
-    --use_lm false \
+    --lm_config "${lm_config}" \
     --asr_config "${asr_config}" \
     --inference_config "${inference_config}" \
     --train_set "${train_set}" \
