@@ -19,7 +19,7 @@ class HuggingfaceOPTModel(AbsLM):
     ):
         super().__init__()
         try:
-            from transformers import OPTModel
+            from transformers import OPTModel, MistralPreTrainedModel
         except Exception as e:
             print("Error: transformers is not properly installed.")
             print("Please install transformers")
