@@ -19,7 +19,7 @@ encoder_conf:
 
 decoder: hugging_face_transformers
 decoder_conf:
-    causal_lm: False
+    causal_lm: True
     model_name_or_path: "mistralai/Mistral-7B-v0.1"
     # attention_heads: 4
     # linear_units: 2048
