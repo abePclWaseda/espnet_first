@@ -16,10 +16,12 @@ class HuggingfaceOPTModel(AbsLM):
         self,
         vocab_size: int,
         opt_name: str,
+        remove_head: bool = True,
+        isMistral:bool = False,
     ):
         super().__init__()
         try:
-            from transformers import OPTModel
+            from transformers import OPTModel, MistralModel
         except Exception as e:
             print("Error: transformers is not properly installed.")
             print("Please install transformers")
@@ -28,22 +30,43 @@ class HuggingfaceOPTModel(AbsLM):
         # opt_model_name_pattern = re.compile(r"facebook/opt-\d+m")
         # assert opt_model_name_pattern.match(opt_name) is not None
 
-        pretrained_opt_model = OPTModel.from_pretrained(opt_name)
-        pretrained_opt_model_dict = pretrained_opt_model.state_dict()
-        pretrained_opt_model_dict.pop("decoder.embed_tokens.weight")
-        self.pretrained_params = copy.deepcopy(pretrained_opt_model_dict)
+        mistral_name = opt_name
 
-        config = pretrained_opt_model.config
-        config.vocab_size = vocab_size
-        config.bos_token_id = vocab_size - 1
-        config.eos_token_id = vocab_size - 1
-        config.pad_token_id = 0
+        if isMistral:
+            pretrained_mistral_model = MistralModel.from_pretrained(mistral_name)
+            pretrained_mistral_model_dict = pretrained_mistral_model.state_dict()
+            pre_trained_lm_head = pretrained_mistral_model_dict.pop("decoder.embed_tokens.weight")
+            self.pretrained_params = copy.deepcopy(pretrained_mistral_model_dict)
 
-        self.decoder = OPTModel(config)
+            config = pretrained_mistral_model.config
 
-        self.lm_head = nn.Linear(
-            config.word_embed_proj_dim, config.vocab_size, bias=False
-        )
+        else:
+            pretrained_opt_model = OPTModel.from_pretrained(opt_name)
+            pretrained_opt_model_dict = pretrained_opt_model.state_dict()
+            pretrained_opt_model_dict.pop("decoder.embed_tokens.weight")
+            self.pretrained_params = copy.deepcopy(pretrained_opt_model_dict)
+
+            config = pretrained_opt_model.config
+
+        if remove_head:
+            config.vocab_size = vocab_size
+            config.bos_token_id = vocab_size - 1
+            config.eos_token_id = vocab_size - 1
+            config.pad_token_id = 0
+
+            self.decoder = OPTModel(config)
+
+            self.lm_head = nn.Linear(
+                config.word_embed_proj_dim, config.vocab_size, bias=False
+            )
+        
+        else:
+            if isMistral:
+                self.decoder = MistralModel(config)
+                self.lm_head = nn.Linear(
+                    pre_trained_lm_head.size(1), pre_trained_lm_head.size(0), bias=False
+                )
+                self.lm_head.weight = self.decoder.embed_tokens.weight
 
     def _target_mask(self, ys_in_pad):
         ys_mask = ys_in_pad != 0

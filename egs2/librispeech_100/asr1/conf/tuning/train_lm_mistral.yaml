@@ -4,7 +4,7 @@ lm: transformer_opt
 lm_conf:
     opt_name: mistralai/Mistral-7B-v0.1
     remove_head: false
-    isGPT2: true
+    isMistral: true
 
 # optimization related
 grad_clip: 5.0
