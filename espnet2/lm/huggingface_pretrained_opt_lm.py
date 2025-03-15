@@ -33,7 +33,7 @@ class HuggingfaceOPTModel(AbsLM):
         mistral_name = opt_name
 
         if isMistral:
-            pretrained_mistral_model = MistralModel.from_pretrained(mistral_name)
+            pretrained_mistral_model = MistralModel.from_pretrained(mistral_name, torch_dtype=torch.bfloat16)
             pretrained_mistral_model_dict = pretrained_mistral_model.state_dict()
             pre_trained_lm_head = pretrained_mistral_model_dict.pop("embed_tokens.weight")
             self.pretrained_params = copy.deepcopy(pretrained_mistral_model_dict)
