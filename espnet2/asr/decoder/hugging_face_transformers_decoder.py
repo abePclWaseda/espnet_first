@@ -56,7 +56,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         self.causal_lm = causal_lm
 
         if self.causal_lm:
-            model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
+            model = AutoModelForCausalLM.from_pretrained(model_name_or_path, torch_dtype=torch.bfloat16)
             self.decoder = get_hugging_face_model_network(model)
 
             if hasattr(self.decoder, "word_embeddings"):
@@ -106,7 +106,7 @@ class HuggingFaceTransformersDecoder(AbsDecoder, BatchScorerInterface):
         if encoder_output_size != self.decoder.config.hidden_size:
             self.linear_in = torch.nn.Linear(
                 encoder_output_size, self.decoder.config.hidden_size
-            )
+            ).to(torch.bfloat16)
         else:
             self.linear_in = torch.nn.Identity()
 
