@@ -16,10 +16,12 @@ class HuggingfaceOPTModel(AbsLM):
         self,
         vocab_size: int,
         opt_name: str,
+        remove_head: bool = True,
+        isWhisper: bool = False,
     ):
         super().__init__()
         try:
-            from transformers import OPTModel
+            from transformers import OPTModel, WhisperForCausalLM
         except Exception as e:
             print("Error: transformers is not properly installed.")
             print("Please install transformers")
@@ -28,22 +30,43 @@ class HuggingfaceOPTModel(AbsLM):
         # opt_model_name_pattern = re.compile(r"facebook/opt-\d+m")
         # assert opt_model_name_pattern.match(opt_name) is not None
 
-        pretrained_opt_model = OPTModel.from_pretrained(opt_name)
-        pretrained_opt_model_dict = pretrained_opt_model.state_dict()
-        pretrained_opt_model_dict.pop("decoder.embed_tokens.weight")
-        self.pretrained_params = copy.deepcopy(pretrained_opt_model_dict)
+        whisper_name = opt_name
 
-        config = pretrained_opt_model.config
-        config.vocab_size = vocab_size
-        config.bos_token_id = vocab_size - 1
-        config.eos_token_id = vocab_size - 1
-        config.pad_token_id = 0
+        if isWhisper:
+            pretrained_whisper_model = WhisperForCausalLM.from_pretrained(whisper_name)
+            pretrained_whisper_model_dict = pretrained_whisper_model.state_dict()
+            pretrained_whisper_model_dict.pop("model.decoder.embed_tokens.weight")
+            self.pretrained_params = copy.deepcopy(pretrained_whisper_model_dict)
 
-        self.decoder = OPTModel(config)
+            config = pretrained_whisper_model.config
 
-        self.lm_head = nn.Linear(
-            config.word_embed_proj_dim, config.vocab_size, bias=False
-        )
+        else:
+            pretrained_opt_model = OPTModel.from_pretrained(opt_name)
+            pretrained_opt_model_dict = pretrained_opt_model.state_dict()
+            pretrained_opt_model_dict.pop("decoder.embed_tokens.weight")
+            self.pretrained_params = copy.deepcopy(pretrained_opt_model_dict)
+
+            config = pretrained_opt_model.config
+
+        if remove_head:
+            config.vocab_size = vocab_size
+            config.bos_token_id = vocab_size - 1
+            config.eos_token_id = vocab_size - 1
+            config.pad_token_id = 0
+
+            self.decoder = OPTModel(config)
+
+            self.lm_head = nn.Linear(
+                config.word_embed_proj_dim, config.vocab_size, bias=False
+            )
+
+        else:
+            if isWhisper:
+                self.decoder = WhisperForCausalLM(config)
+                self.lm_head = nn.Linear(
+                    pretrained_whisper_model.size(1), pretrained_whisper_model.size(0), bias=False
+                )
+                self.lm_head.weight = self.decoder.model.decoder.embed_tokens.weight
 
     def _target_mask(self, ys_in_pad):
         ys_mask = ys_in_pad != 0
