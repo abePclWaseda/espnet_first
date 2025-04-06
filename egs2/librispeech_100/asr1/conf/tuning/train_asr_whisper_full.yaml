@@ -25,6 +25,10 @@ decoder: whisper
 decoder_conf:
     whisper_model: tiny
     dropout_rate: 0.0
+preprocessor: default
+preprocessor_conf:
+    whisper_language: "en"
+    whisper_task: "transcribe"
 
 model_conf:
     ctc_weight: 0.0
