@@ -14,7 +14,7 @@ inference_config=conf/tuning/decode_asr_whisper_noctc_greedy.yaml
 
 ./asr.sh \
     --token_type whisper_multilingual \
-    --asr_speech_fold_length 256 \
+    --asr_speech_fold_length 512 \
     --asr_text_fold_length 150 \
     --cleaner whisper_basic \
     --lang en \
