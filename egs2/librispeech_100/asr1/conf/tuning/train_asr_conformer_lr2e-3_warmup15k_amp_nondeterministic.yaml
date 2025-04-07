@@ -17,15 +17,17 @@ encoder_conf:
     use_cnn_module: true
     cnn_module_kernel: 31
 
-decoder: transformer
+decoder: hugging_face_transformers
 decoder_conf:
-    attention_heads: 4
-    linear_units: 2048
-    num_blocks: 6
-    dropout_rate: 0.1
-    positional_dropout_rate: 0.1
-    self_attention_dropout_rate: 0.1
-    src_attention_dropout_rate: 0.1
+    causal_lm: False
+    model_name_or_path: "openai-community/gpt2"
+    # attention_heads: 4
+    # linear_units: 2048
+    # num_blocks: 6
+    # dropout_rate: 0.1
+    # positional_dropout_rate: 0.1
+    # self_attention_dropout_rate: 0.1
+    # src_attention_dropout_rate: 0.1
 
 model_conf:
     ctc_weight: 0.3
@@ -61,7 +63,7 @@ cudnn_benchmark: false
 
 optim: adam
 optim_conf:
-    lr: 0.002
+    lr: 0.0005
     weight_decay: 0.000001
 scheduler: warmuplr
 scheduler_conf:
@@ -82,3 +84,57 @@ specaug_conf:
     - 0.
     - 0.05
     num_time_mask: 5
+
+# freeze_param: [
+#   "decoder.decoder.wte",
+#   "decoder.decoder.wpe",
+#   "decoder.decoder.ln_f",
+#   "decoder.decoder.h.0.ln_1",
+#   "decoder.decoder.h.0.attn",
+#   "decoder.decoder.h.0.ln_2",
+#   "decoder.decoder.h.0.mlp",
+#   "decoder.decoder.h.1.ln_1",
+#   "decoder.decoder.h.1.attn",
+#   "decoder.decoder.h.1.ln_2",
+#   "decoder.decoder.h.1.mlp",
+#   "decoder.decoder.h.2.ln_1",
+#   "decoder.decoder.h.2.attn",
+#   "decoder.decoder.h.2.ln_2",
+#   "decoder.decoder.h.2.mlp",
+#   "decoder.decoder.h.3.ln_1",
+#   "decoder.decoder.h.3.attn",
+#   "decoder.decoder.h.3.ln_2",
+#   "decoder.decoder.h.3.mlp",
+#   "decoder.decoder.h.4.ln_1",
+#   "decoder.decoder.h.4.attn",
+#   "decoder.decoder.h.4.ln_2",
+#   "decoder.decoder.h.4.mlp",
+#   "decoder.decoder.h.5.ln_1",
+#   "decoder.decoder.h.5.attn",
+#   "decoder.decoder.h.5.ln_2",
+#   "decoder.decoder.h.5.mlp",
+#   "decoder.decoder.h.6.ln_1",
+#   "decoder.decoder.h.6.attn",
+#   "decoder.decoder.h.6.ln_2",
+#   "decoder.decoder.h.6.mlp",
+#   "decoder.decoder.h.7.ln_1",
+#   "decoder.decoder.h.7.attn",
+#   "decoder.decoder.h.7.ln_2",
+#   "decoder.decoder.h.7.mlp",
+#   "decoder.decoder.h.8.ln_1",
+#   "decoder.decoder.h.8.attn",
+#   "decoder.decoder.h.8.ln_2",
+#   "decoder.decoder.h.8.mlp",
+#   "decoder.decoder.h.9.ln_1",
+#   "decoder.decoder.h.9.attn",
+#   "decoder.decoder.h.9.ln_2",
+#   "decoder.decoder.h.9.mlp",
+#   "decoder.decoder.h.10.ln_1",
+#   "decoder.decoder.h.10.attn",
+#   "decoder.decoder.h.10.ln_2",
+#   "decoder.decoder.h.10.mlp",
+#   "decoder.decoder.h.11.ln_1",
+#   "decoder.decoder.h.11.attn",
+#   "decoder.decoder.h.11.ln_2",
+#   "decoder.decoder.h.11.mlp",
+# ]
