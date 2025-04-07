@@ -1823,9 +1823,10 @@ if [ ${stage} -le 16 ] && [ ${stop_stage} -ge 16 ] && ! [[ " ${skip_stages} " =~
         log "ERROR: You need to install git-lfs first" && \
         exit 1
 
+    log "Info: Here is OK1"
     dir_repo=${expdir}/hf_${hf_repo//"/"/"_"}
-    [ ! -d "${dir_repo}" ] && git clone https://huggingface.co/${hf_repo} ${dir_repo}
-
+    [ ! -d "${dir_repo}" ] && git clone https://abePclWaseda:(アクセストークン)@huggingface.co/${hf_repo} ${dir_repo}
+    log "Info: Here is OK2"
     if command -v git &> /dev/null; then
         _creator_name="$(git config user.name)"
         _checkout="git checkout $(git show -s --format=%H)"
@@ -1833,12 +1834,13 @@ if [ ${stage} -le 16 ] && [ ${stop_stage} -ge 16 ] && ! [[ " ${skip_stages} " =~
         _creator_name="$(whoami)"
         _checkout=""
     fi
+    log "Info: Here is OK3"
     # /some/where/espnet/egs2/foo/asr1/ -> foo/asr1
     _task="$(pwd | rev | cut -d/ -f2 | rev)"
     # foo/asr1 -> foo
     _corpus="${_task%/*}"
     _model_name="${_creator_name}/${_corpus}_$(basename ${packed_model} .zip)"
-
+    log "Info: Here is OK4"
     # copy files in ${dir_repo}
     unzip -o ${packed_model} -d ${dir_repo}
     # Generate description file
@@ -1849,14 +1851,18 @@ if [ ${stage} -le 16 ] && [ ${stop_stage} -ge 16 ] && ! [[ " ${skip_stages} " =~
     # shellcheck disable=SC2034
     task_exp=${asr_exp}
     eval "echo \"$(cat scripts/utils/TEMPLATE_HF_Readme.md)\"" > "${dir_repo}"/README.md
-
+    log "Info: Here is OK5"
     this_folder=${PWD}
     cd ${dir_repo}
+    git remote set-url origin https://abePclWaseda:(アクセストークン)@huggingface.co/${hf_repo}
+
     if [ -n "$(git status --porcelain)" ]; then
         git add .
         git commit -m "Update model"
     fi
+    log "Info: Here is OK6"
     git push
+    log "Info: Here is OK7"
     cd ${this_folder}
 fi
 
