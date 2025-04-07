@@ -2,7 +2,7 @@ normalize: null
 
 encoder: whisper
 encoder_conf:
-    whisper_model: medium
+    whisper_model: tiny
     dropout_rate: 0.0
     use_specaug: true
     specaug_conf:
@@ -23,8 +23,12 @@ encoder_conf:
 
 decoder: whisper
 decoder_conf:
-    whisper_model: medium
+    whisper_model: tiny
     dropout_rate: 0.0
+preprocessor: default
+preprocessor_conf:
+    whisper_language: "en"
+    whisper_task: "transcribe"
 
 model_conf:
     ctc_weight: 0.0
@@ -44,9 +48,9 @@ num_workers: 4
 sort_in_batch: descending       # how to sort data in making batch
 sort_batch: descending          # how to sort created batches
 batch_type: numel
-batch_bins: 12000000            # good for single GPU w/ 40G mem
-accum_grad: 4
-max_epoch: 3
+batch_bins: 15000            # good for single GPU w/ 40G mem
+accum_grad: 128
+max_epoch: 2
 patience: none
 init: none
 best_model_criterion:
@@ -59,10 +63,53 @@ use_amp: true
 cudnn_deterministic: false
 cudnn_benchmark: false
 
+# LoRA finetune related
+use_adapter: true
+adapter: lora
+adapter_conf:
+    rank: 8
+    alpha: 16
+    dropout_rate: 0.05
+    target_modules: ["decoder.decoders.blocks.0.attn.query","decoder.decoders.blocks.0.attn.key","decoder.decoders.blocks.0.attn.value","decoder.decoders.blocks.0.attn.out"
+                    ,"decoder.decoders.blocks.1.attn.query","decoder.decoders.blocks.1.attn.key","decoder.decoders.blocks.1.attn.value","decoder.decoders.blocks.1.attn.out"
+                    ,"decoder.decoders.blocks.2.attn.query","decoder.decoders.blocks.2.attn.key","decoder.decoders.blocks.2.attn.value","decoder.decoders.blocks.2.attn.out"
+                    ,"decoder.decoders.blocks.3.attn.query","decoder.decoders.blocks.3.attn.key","decoder.decoders.blocks.3.attn.value","decoder.decoders.blocks.3.attn.out"
+                    ,"decoder.decoders.blocks.4.attn.query","decoder.decoders.blocks.4.attn.key","decoder.decoders.blocks.4.attn.value","decoder.decoders.blocks.4.attn.out"
+                    ,"decoder.decoders.blocks.5.attn.query","decoder.decoders.blocks.5.attn.key","decoder.decoders.blocks.5.attn.value","decoder.decoders.blocks.5.attn.out"
+                    ,"decoder.decoders.blocks.6.attn.query","decoder.decoders.blocks.6.attn.key","decoder.decoders.blocks.6.attn.value","decoder.decoders.blocks.6.attn.out"
+                    ,"decoder.decoders.blocks.7.attn.query","decoder.decoders.blocks.7.attn.key","decoder.decoders.blocks.7.attn.value","decoder.decoders.blocks.7.attn.out"
+                    ,"decoder.decoders.blocks.8.attn.query","decoder.decoders.blocks.8.attn.key","decoder.decoders.blocks.8.attn.value","decoder.decoders.blocks.8.attn.out"
+                    ,"decoder.decoders.blocks.9.attn.query","decoder.decoders.blocks.9.attn.key","decoder.decoders.blocks.9.attn.value","decoder.decoders.blocks.9.attn.out"
+                    ,"decoder.decoders.blocks.10.attn.query","decoder.decoders.blocks.10.attn.key","decoder.decoders.blocks.10.attn.value","decoder.decoders.blocks.10.attn.out"
+                    ,"decoder.decoders.blocks.11.attn.query","decoder.decoders.blocks.11.attn.key","decoder.decoders.blocks.11.attn.value","decoder.decoders.blocks.11.attn.out"
+                    ,"decoder.decoders.blocks.12.attn.query","decoder.decoders.blocks.12.attn.key","decoder.decoders.blocks.12.attn.value","decoder.decoders.blocks.12.attn.out"
+                    ,"decoder.decoders.blocks.13.attn.query","decoder.decoders.blocks.13.attn.key","decoder.decoders.blocks.13.attn.value","decoder.decoders.blocks.13.attn.out"
+                    ,"decoder.decoders.blocks.14.attn.query","decoder.decoders.blocks.14.attn.key","decoder.decoders.blocks.14.attn.value","decoder.decoders.blocks.14.attn.out"
+                    ,"decoder.decoders.blocks.15.attn.query","decoder.decoders.blocks.15.attn.key","decoder.decoders.blocks.15.attn.value","decoder.decoders.blocks.15.attn.out"
+                    ,"decoder.decoders.blocks.16.attn.query","decoder.decoders.blocks.16.attn.key","decoder.decoders.blocks.16.attn.value","decoder.decoders.blocks.16.attn.out"
+                    ,"decoder.decoders.blocks.17.attn.query","decoder.decoders.blocks.17.attn.key","decoder.decoders.blocks.17.attn.value","decoder.decoders.blocks.17.attn.out"
+                    ,"decoder.decoders.blocks.18.attn.query","decoder.decoders.blocks.18.attn.key","decoder.decoders.blocks.18.attn.value","decoder.decoders.blocks.18.attn.out"
+                    ,"decoder.decoders.blocks.19.attn.query","decoder.decoders.blocks.19.attn.key","decoder.decoders.blocks.19.attn.value","decoder.decoders.blocks.19.attn.out"
+                    ,"decoder.decoders.blocks.20.attn.query","decoder.decoders.blocks.20.attn.key","decoder.decoders.blocks.20.attn.value","decoder.decoders.blocks.20.attn.out"
+                    ,"decoder.decoders.blocks.21.attn.query","decoder.decoders.blocks.21.attn.key","decoder.decoders.blocks.21.attn.value","decoder.decoders.blocks.21.attn.out"
+                    ,"decoder.decoders.blocks.22.attn.query","decoder.decoders.blocks.22.attn.key","decoder.decoders.blocks.22.attn.value","decoder.decoders.blocks.22.attn.out"
+                    ,"decoder.decoders.blocks.23.attn.query","decoder.decoders.blocks.23.attn.key","decoder.decoders.blocks.23.attn.value","decoder.decoders.blocks.23.attn.out"
+                    ,"decoder.decoders.blocks.24.attn.query","decoder.decoders.blocks.24.attn.key","decoder.decoders.blocks.24.attn.value","decoder.decoders.blocks.24.attn.out"
+                    ,"decoder.decoders.blocks.25.attn.query","decoder.decoders.blocks.25.attn.key","decoder.decoders.blocks.25.attn.value","decoder.decoders.blocks.25.attn.out"
+                    ,"decoder.decoders.blocks.26.attn.query","decoder.decoders.blocks.26.attn.key","decoder.decoders.blocks.26.attn.value","decoder.decoders.blocks.26.attn.out"
+                    ,"decoder.decoders.blocks.27.attn.query","decoder.decoders.blocks.27.attn.key","decoder.decoders.blocks.27.attn.value","decoder.decoders.blocks.27.attn.out"
+                    ,"decoder.decoders.blocks.28.attn.query","decoder.decoders.blocks.28.attn.key","decoder.decoders.blocks.28.attn.value","decoder.decoders.blocks.28.attn.out"
+                    ,"decoder.decoders.blocks.29.attn.query","decoder.decoders.blocks.29.attn.key","decoder.decoders.blocks.29.attn.value","decoder.decoders.blocks.29.attn.out"
+                    ,"decoder.decoders.blocks.30.attn.query","decoder.decoders.blocks.30.attn.key","decoder.decoders.blocks.30.attn.value","decoder.decoders.blocks.30.attn.out"
+                    ,"decoder.decoders.blocks.31.attn.query","decoder.decoders.blocks.31.attn.key","decoder.decoders.blocks.31.attn.value","decoder.decoders.blocks.31.attn.out"] # only decoder self-attention
+
+unused_parameters: true
+freeze_param: ["encoder","decoder"]
+
 optim: adamw
 grad_clip: 1.0
 optim_conf:
-    lr: 1.0e-05
+    lr: 5.0e-04
     weight_decay: 0.01
     betas:
     - 0.9
